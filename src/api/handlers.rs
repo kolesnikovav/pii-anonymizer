@@ -1,6 +1,5 @@
 use axum::{
     extract::State,
-    http::StatusCode,
     Json,
 };
 use axum::response::Sse;
@@ -10,7 +9,7 @@ use tokio::time::interval;
 use tokio_stream::wrappers::IntervalStream;
 use tokio_stream::StreamExt;
 use serde_json::json;
-use tracing::{info, error};
+use tracing::info;
 use validator::Validate;
 
 use crate::config::Settings;
@@ -42,7 +41,7 @@ pub async fn anonymize(
     // Валидация
     request.validate().map_err(AppError::from)?;
     
-    let (settings, anonymizer) = state;
+    let (_settings, anonymizer) = state;
     
     info!("📨 Запрос на анонимизацию: {} символов", request.text.len());
     

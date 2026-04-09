@@ -1,6 +1,5 @@
 use axum::{
     extract::Request,
-    http::StatusCode,
     middleware::Next,
     response::Response,
 };
@@ -26,13 +25,6 @@ pub async fn request_logger(request: Request, next: Next) -> Response {
     } else {
         info!("✅ {} {} {} - {:?}", method, uri, status, elapsed);
     }
-    
-    response
-}
-
-/// Middleware для добавления CORS заголовков
-pub async fn cors_middleware(request: Request, next: Next) -> Response {
-    let response = next.run(request).await;
     
     response
 }

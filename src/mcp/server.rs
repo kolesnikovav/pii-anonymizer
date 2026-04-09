@@ -1,6 +1,6 @@
 use serde_json::json;
 use std::sync::Arc;
-use tracing::{info, warn};
+use tracing::info;
 
 use crate::anonymizer::AnonymizerEngine;
 use crate::models::AnonymizeRequest;

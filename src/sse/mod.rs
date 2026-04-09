@@ -1,3 +1,1 @@
-mod emitter;
-
-pub use emitter::SseEmitter;
+// SSE модуль для стриминга результатов

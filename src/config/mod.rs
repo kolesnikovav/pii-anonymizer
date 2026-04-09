@@ -64,9 +64,4 @@ impl Settings {
 
         config.try_deserialize()
     }
-
-    /// Загрузка конфигурации (обратная совместимость)
-    pub fn new() -> Result<Self, ConfigError> {
-        Self::from_file("config/settings")
-    }
 }
