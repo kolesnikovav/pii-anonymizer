@@ -1,8 +1,10 @@
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
+use validator::Validate;
 
-#[derive(Debug, Deserialize, ToSchema)]
+#[derive(Debug, Deserialize, Serialize, ToSchema, Validate)]
 pub struct AnonymizeRequest {
+    #[validate(length(min = 1, max = 100000))]
     pub text: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub strategy: Option<String>,
@@ -33,6 +35,10 @@ pub enum PIIType {
     Passport,
     CreditCard,
     IpAddress,
+    Snils,
+    Inn,
+    Address,
+    FullName,
     Unknown,
 }
 
@@ -44,7 +50,32 @@ impl std::fmt::Display for PIIType {
             PIIType::Passport => write!(f, "PASSPORT"),
             PIIType::CreditCard => write!(f, "CREDIT_CARD"),
             PIIType::IpAddress => write!(f, "IP_ADDRESS"),
+            PIIType::Snils => write!(f, "SNILS"),
+            PIIType::Inn => write!(f, "INN"),
+            PIIType::Address => write!(f, "ADDRESS"),
+            PIIType::FullName => write!(f, "FULL_NAME"),
             PIIType::Unknown => write!(f, "UNKNOWN"),
         }
     }
+}
+
+/// Запрос для пакетной обработки
+#[derive(Debug, Deserialize, ToSchema, Validate)]
+pub struct BatchAnonymizeRequest {
+    #[validate(length(min = 1, max = 1000))]
+    pub requests: Vec<AnonymizeRequest>,
+}
+
+/// Ответ для пакетной обработки
+#[derive(Debug, Serialize, ToSchema)]
+pub struct BatchAnonymizeResponse {
+    pub results: Vec<AnonymizeResponse>,
+    pub total_processed: usize,
+}
+
+/// Статистика PII
+#[derive(Debug, Serialize, ToSchema)]
+pub struct PIIStats {
+    pub total_detected: usize,
+    pub by_type: std::collections::HashMap<String, usize>,
 }

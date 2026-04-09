@@ -1,6 +1,6 @@
 mod engine;
 mod patterns;
-mod strategies;
+pub mod strategies;
 
 pub use engine::AnonymizerEngine;
 pub use patterns::PIIPattern;
