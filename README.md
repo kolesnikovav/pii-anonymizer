@@ -243,31 +243,38 @@ curl -N http://localhost:3000/api/v1/sse/stream
 ```
 
 #### GET /sse
-MCP SSE endpoint для подключения клиентов к серверу как к MCP серверу.
+MCP SSE endpoint для подключения клиентов к серверу как к MCP серверу (стандартный MCP SSE transport).
 
 ```bash
 curl -N http://localhost:3000/sse
-curl -N "http://localhost:3000/sse?session_id=my-session"
 ```
 
-При подключении клиент получает событие инициализации с информацией о сервере.
+При подключении сервер возвращает событие `endpoint` с URL для отправки сообщений:
+```
+event: endpoint
+data: /message?sessionId=<sessionId>
+```
 
-#### POST /sse/message
-Отправка MCP JSON-RPC сообщений на сервер.
+#### POST /message
+Отправка MCP JSON-RPC сообщений на сервер. URL возвращается в SSE событии `endpoint`.
 
 ```bash
 # Initialize
-curl -X POST http://localhost:3000/sse/message \
+curl -X POST "http://localhost:3000/message?sessionId=<sessionId>" \
   -H "Content-Type: application/json" \
   -d '{
     "jsonrpc": "2.0",
     "id": 1,
     "method": "initialize",
-    "params": {}
+    "params": {
+      "protocolVersion": "2024-11-05",
+      "capabilities": {},
+      "clientInfo": {"name": "test-client", "version": "0.1.0"}
+    }
   }'
 
 # Список инструментов
-curl -X POST http://localhost:3000/sse/message \
+curl -X POST "http://localhost:3000/message?sessionId=<sessionId>" \
   -H "Content-Type: application/json" \
   -d '{
     "jsonrpc": "2.0",
@@ -277,7 +284,7 @@ curl -X POST http://localhost:3000/sse/message \
   }'
 
 # Вызов инструмента anonymize
-curl -X POST http://localhost:3000/sse/message \
+curl -X POST "http://localhost:3000/message?sessionId=<sessionId>" \
   -H "Content-Type: application/json" \
   -d '{
     "jsonrpc": "2.0",
@@ -293,7 +300,7 @@ curl -X POST http://localhost:3000/sse/message \
   }'
 
 # Вызов инструмента detect_pii
-curl -X POST http://localhost:3000/sse/message \
+curl -X POST "http://localhost:3000/message?sessionId=<sessionId>" \
   -H "Content-Type: application/json" \
   -d '{
     "jsonrpc": "2.0",
@@ -308,7 +315,7 @@ curl -X POST http://localhost:3000/sse/message \
   }'
 ```
 
-**Ответ tools/list**:
+**Ответ tools/list** (приходит через SSE stream)**:
 ```json
 {
   "jsonrpc": "2.0",
@@ -318,24 +325,24 @@ curl -X POST http://localhost:3000/sse/message \
       {
         "name": "anonymize",
         "description": "Анонимизировать текст, удаляя PII данные",
-        "input_schema": { ... }
+        "inputSchema": { ... }
       },
       {
         "name": "detect_pii",
         "description": "Обнаружить PII данные в тексте",
-        "input_schema": { ... }
+        "inputSchema": { ... }
       },
       {
         "name": "batch_anonymize",
         "description": "Пакетная анонимизация нескольких текстов",
-        "input_schema": { ... }
+        "inputSchema": { ... }
       }
     ]
   }
 }
 ```
 
-**Ответ tools/call (anonymize)**:
+**Ответ tools/call (anonymize)** (приходит через SSE stream):
 ```json
 {
   "jsonrpc": "2.0",
@@ -344,7 +351,7 @@ curl -X POST http://localhost:3000/sse/message \
     "content": [
       {
         "type": "text",
-        "text": "{\"anonymized_text\":\"Contact: jo***@***e.com\",\"detected_pii_count\":1,...}"
+        "text": "{\"anonymized_text\":\"...\",\"detected_pii\":...}"
       }
     ]
   }
@@ -355,18 +362,26 @@ curl -X POST http://localhost:3000/sse/message \
 
 ### Поддержка SSE Transport
 
-Сервер поддерживает MCP через SSE transport, что позволяет подключаться клиентам, использующим SSE для коммуникации.
+Сервер поддерживает стандартный MCP SSE transport через библиотеку `rmcp`, что позволяет подключаться любому MCP-совместимому клиенту (AnythingLLM, Claude Desktop, VS Code и др.).
 
 **Архитектура**:
 1. Клиент подключается к `GET /sse` для получения SSE stream
-2. Клиент отправляет JSON-RPC сообщения на `POST /sse/message`
-3. Сервер обрабатывает запросы и возвращает результаты через оба канала
+2. Сервер возвращает событие `endpoint` с уникальным URL `/message?sessionId=...`
+3. Клиент отправляет JSON-RPC сообщения POST на полученный URL
+4. Ответы сервера приходят через SSE stream
 
 **Поддерживаемые JSON-RPC методы**:
-- `initialize` - инициализация подключения
-- `notifications/initialized` - уведомление о завершении инициализации
-- `tools/list` - получение списка доступных инструментов
-- `tools/call` - вызов конкретного инструмента
+- `initialize` — инициализация подключения (рукопожатие MCP)
+- `notifications/initialized` — уведомление о завершении инициализации
+- `tools/list` — получение списка доступных инструментов
+- `tools/call` — вызов конкретного инструмента
+
+### Режимы запуска
+
+| Режим | CLI аргумент | Транспорт | Описание |
+|-------|-------------|-----------|----------|
+| HTTP SSE | `--mcp-mode http` (по умолчанию) | SSE + HTTP POST | Для подключения AnythingLLM и других SSE клиентов |
+| STDIO | `--mcp-mode stdio` | stdin/stdout | Для интеграции с Claude Desktop, VS Code |
 
 ### Доступные инструменты
 
@@ -376,7 +391,7 @@ curl -X POST http://localhost:3000/sse/message \
 | `detect_pii` | Обнаружить PII | `text` (string) |
 | `batch_anonymize` | Пакетная обработка | `texts` (array), `strategy` (string, optional) |
 
-### Интеграция с AnythingLLM
+### Интеграция с AnythingLLM (SSE Transport)
 
 1. **Настройка MCP сервера**:
 
@@ -385,15 +400,22 @@ curl -X POST http://localhost:3000/sse/message \
 {
   "mcpServers": {
     "pii-anonymizer": {
-      "command": "pii-anonymizer",
-      "args": ["--mcp-mode", "stdio", "--config", "/path/to/config.yaml"],
-      "transport": "stdio"
+      "url": "http://localhost:3000/sse",
+      "transport": "sse"
     }
   }
 }
 ```
 
-2. **Использование в чате**:
+2. **Запуск сервера**:
+
+```bash
+cargo run -- --config config/settings.yaml
+# Или с переопределением стратегии
+cargo run -- --config config/settings.yaml --strategy hash
+```
+
+3. **Использование в чате**:
 
 ```
 User: Анонимизируй этот текст: "Contact john@test.com for info"
