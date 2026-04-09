@@ -208,8 +208,6 @@ mod tests {
         let settings = AnonymizerSettings {
             default_strategy: "mask".to_string(),
             patterns: vec!["email".to_string()],
-            mask_char: '*',
-            mask_length: 10,
         };
         let engine = AnonymizerEngine::new(&settings);
         McpServer::new(engine, "test-server", "0.1.0")

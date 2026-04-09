@@ -35,8 +35,9 @@ impl AnonymizerEngine {
             .map(|s| AnonymizationStrategy::from_str(s))
             .unwrap_or_else(|| AnonymizationStrategy::from_str(&self.settings.default_strategy));
 
-        // Обнаружение и замена (обработка с конца для сохранения позиций)
-        let mut matches: Vec<(usize, usize, PIIPattern, String)> = Vec::new();
+        // Обнаружение и замена с счётчиком для Replace стратегии
+        let mut matches: Vec<(usize, usize, String, String)> = Vec::new();
+        let mut pii_counters: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
 
         for pattern in &self.patterns {
             for mat in pattern.pattern.find_iter(text) {
@@ -46,6 +47,11 @@ impl AnonymizerEngine {
                 });
                 
                 if !is_duplicate {
+                    let pii_type_str = pattern.pii_type.to_string();
+                    let counter = pii_counters.entry(pii_type_str.clone()).or_insert(0);
+                    *counter += 1;
+                    let current_counter = *counter;
+
                     detected_pii.push(DetectedPII {
                         pii_type: self.map_pii_type(&pattern.pii_type),
                         value: mat.as_str().to_string(),
@@ -56,12 +62,11 @@ impl AnonymizerEngine {
 
                     let replacement = strategy.apply(
                         mat.as_str(),
-                        &pattern.pii_type.to_string(),
-                        self.settings.mask_char,
-                        self.settings.mask_length,
+                        &pii_type_str,
+                        current_counter,
                     );
                     
-                    matches.push((mat.start(), mat.end(), pattern.clone(), replacement));
+                    matches.push((mat.start(), mat.end(), pii_type_str, replacement));
                 }
             }
         }
@@ -158,8 +163,6 @@ mod tests {
                 "ip_address".to_string(),
                 "snils".to_string(),
             ],
-            mask_char: '*',
-            mask_length: 10,
         };
         AnonymizerEngine::new(&settings)
     }
@@ -218,7 +221,7 @@ mod tests {
         let response = engine.anonymize(&request);
         
         assert!(!response.anonymized_text.contains("test@example.com"));
-        assert!(response.anonymized_text.contains("[EMAIL]"));
+        assert!(response.anonymized_text.contains("[EMAIL_"));
     }
 
     #[test]

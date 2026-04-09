@@ -21,8 +21,6 @@ pub struct ServerSettings {
 pub struct AnonymizerSettings {
     pub default_strategy: String,
     pub patterns: Vec<String>,
-    pub mask_char: char,
-    pub mask_length: usize,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -53,11 +51,10 @@ pub struct LoggingSettings {
 }
 
 impl Settings {
-    pub fn new() -> Result<Self, ConfigError> {
+    /// Загрузка конфигурации из файла
+    pub fn from_file(path: &str) -> Result<Self, ConfigError> {
         let config = Config::builder()
-            // Загрузка из файла конфигурации
-            .add_source(File::with_name("config/settings").required(false))
-            // Переопределение из переменных окружения
+            .add_source(File::with_name(path).required(true))
             .add_source(
                 Environment::with_prefix("ANONYMIZER")
                     .prefix_separator("_")
@@ -66,5 +63,10 @@ impl Settings {
             .build()?;
 
         config.try_deserialize()
+    }
+
+    /// Загрузка конфигурации (обратная совместимость)
+    pub fn new() -> Result<Self, ConfigError> {
+        Self::from_file("config/settings")
     }
 }

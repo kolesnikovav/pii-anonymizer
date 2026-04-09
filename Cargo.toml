@@ -47,6 +47,7 @@ utoipa = { version = "4.2", features = ["axum_extras"] }
 thiserror = "1.0"
 async-trait = "0.1"
 rmcp = { version = "0.1", features = ["server", "client"] }
+clap = { version = "4.4", features = ["derive"] }
 
 [dev-dependencies]
 tokio-test = "0.4"

@@ -6,15 +6,15 @@ server:
 
 # Anonymizer settings
 anonymizer:
-  default_strategy: "mask"  # mask, hash, replace, redact
+  default_strategy: "mask"  # replace, mask, hash
   patterns:
     - email
     - phone
     - passport
     - credit_card
     - ip_address
-  mask_char: "*"
-  mask_length: 10
+    - snils
+    - inn
 
 # MCP configuration
 mcp:

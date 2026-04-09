@@ -1,3 +1,4 @@
+use clap::Parser;
 use tokio::signal;
 use tracing::{info, Level};
 use tracing_subscriber::FmtSubscriber;
@@ -10,26 +11,100 @@ mod sse;
 mod middleware;
 mod models;
 
+/// PII Anonymizer MCP Server
+#[derive(Parser, Debug)]
+#[command(name = "pii-anonymizer")]
+#[command(about = "Сервис для анонимизации поисковых запросов с удалением PII данных", long_about = None)]
+struct Args {
+    /// Путь к файлу конфигурации
+    #[arg(short, long, default_value = "config/settings.yaml")]
+    config: String,
+
+    /// Хост сервера (переопределяет конфиг)
+    #[arg(long)]
+    host: Option<String>,
+
+    /// Порт сервера (переопределяет конфиг)
+    #[arg(long)]
+    port: Option<u16>,
+
+    /// Стратегия анонимизации (replace, mask, hash)
+    #[arg(short, long)]
+    strategy: Option<String>,
+
+    /// Режим MCP (stdio, http)
+    #[arg(long, default_value = "http")]
+    mcp_mode: String,
+
+    /// Уровень логирования (trace, debug, info, warn, error)
+    #[arg(long, default_value = "info")]
+    log_level: String,
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let args = Args::parse();
+
     // Инициализация логирования
-    init_logging();
+    init_logging(&args.log_level);
     
     info!("🚀 Запуск PII Anonymizer MCP Server");
+    info!("📋 Конфигурация: {}", args.config);
+
+    // Загрузка конфигурации из файла
+    let mut settings = config::Settings::from_file(&args.config)?;
     
-    // Загрузка конфигурации
-    let settings = config::Settings::new()?;
-    info!("📋 Конфигурация загружена: {}:{}", settings.server.host, settings.server.port);
+    // Переопределение из CLI аргументов
+    if let Some(ref host) = args.host {
+        settings.server.host = host.clone();
+    }
+    if let Some(port) = args.port {
+        settings.server.port = port;
+    }
+    if let Some(ref strategy) = args.strategy {
+        settings.anonymizer.default_strategy = strategy.clone();
+    }
+
+    info!("⚙️  Настройки: {}:{}, стратегия: {}", 
+        settings.server.host, 
+        settings.server.port,
+        settings.anonymizer.default_strategy
+    );
     
     // Инициализация анонимизатора
     let anonymizer = anonymizer::AnonymizerEngine::new(&settings.anonymizer);
     info!("🔍 Анонимизатор инициализирован");
+
+    // Режим MCP
+    if args.mcp_mode == "stdio" {
+        info!("🤖 Запуск в режиме MCP stdio");
+        let mcp_server = mcp::McpServer::new(
+            anonymizer.clone(),
+            &settings.mcp.server_name,
+            &settings.mcp.server_version,
+        );
+        
+        info!("MCP инструменты:");
+        let tools = mcp_server.get_tools();
+        if let Some(tools_arr) = tools.get("tools").and_then(|t| t.as_array()) {
+            for tool in tools_arr {
+                if let Some(name) = tool.get("name").and_then(|n| n.as_str()) {
+                    info!("  - {}", name);
+                }
+            }
+        }
+        
+        // В режиме stdio просто ждём
+        shutdown_signal().await;
+        return Ok(());
+    }
     
-    // Создание и запуск HTTP сервера
+    // HTTP режим
     let app = api::create_router(settings.clone(), anonymizer);
     
     let addr = format!("{}:{}", settings.server.host, settings.server.port);
     info!("🌐 HTTP сервер слушает на {}", addr);
+    info!("📖 Документация API: http://{}/api/v1/health", addr);
     
     let listener = tokio::net::TcpListener::bind(&addr).await?;
     
@@ -40,9 +115,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn init_logging() {
-    let subscriber = FmtSubscriber::builder()
-        .with_max_level(Level::INFO)
+fn init_logging(log_level: &str) {
+    let level = match log_level.to_lowercase().as_str() {
+        "trace" => Level::TRACE,
+        "debug" => Level::DEBUG,
+        "info" => Level::INFO,
+        "warn" => Level::WARN,
+        "error" => Level::ERROR,
+        _ => Level::INFO,
+    };
+
+    FmtSubscriber::builder()
+        .with_max_level(level)
         .with_target(false)
         .with_thread_ids(true)
         .with_file(true)

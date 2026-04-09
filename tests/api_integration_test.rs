@@ -17,8 +17,6 @@ fn create_test_app() -> axum::Router {
                 "phone_ru".to_string(),
                 "ip_address".to_string(),
             ],
-            mask_char: '*',
-            mask_length: 10,
         },
         mcp: McpSettings {
             enabled: false,
@@ -93,7 +91,7 @@ async fn test_anonymize_with_strategy() {
     
     assert_eq!(response.status_code(), 200);
     let json: serde_json::Value = response.json();
-    assert!(json["anonymized_text"].as_str().unwrap().contains("[EMAIL]"));
+    assert!(json["anonymized_text"].as_str().unwrap().contains("[EMAIL_"));
 }
 
 #[tokio::test]
