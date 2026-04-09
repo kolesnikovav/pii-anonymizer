@@ -16,7 +16,12 @@
       "Bash(cargo metadata *)",
       "Bash(python3 *)",
       "Bash(cargo search *)",
-      "Bash(cargo remove *)"
+      "Bash(cargo remove *)",
+      "WebSearch",
+      "WebFetch(docs.anythingllm.com)",
+      "Bash(cargo run *)",
+      "Bash(sleep *)",
+      "Bash(curl *)"
     ]
   },
   "$version": 3
