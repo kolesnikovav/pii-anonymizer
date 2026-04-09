@@ -9,12 +9,18 @@ anonymizer:
   default_strategy: "mask"  # replace, mask, hash
   patterns:
     - email
-    - phone
-    - passport
+    - phone_ru
+    - passport_ru
     - credit_card
     - ip_address
     - snils
     - inn
+    - api_key_aws
+    - api_key_github
+    - access_token_jwt
+    - ssh_key_rsa
+    - ssh_key_ed25519
+    - domain_unknown
 
 # MCP configuration
 mcp:

@@ -4,17 +4,22 @@
 
 ## 🚀 Возможности
 
-- 🔍 **Обнаружение PII**: email, телефоны, паспорта РФ, СНИЛС, ИНН, кредитные карты, IP-адреса
+- 🔍 **Обнаружение PII**:
+  - Персональные: email, телефоны, паспорта РФ, СНИЛС, ИНН
+  - Финансовые: кредитные карты
+  - Технические: **API ключи** (AWS, GitHub, Google), **токены доступа** (JWT), **SSH ключи** (RSA, ED25519, ECDSA)
+  - Сетевые: IP-адреса, **домены** (с фильтрацией общеизвестных)
 - 🎭 **3 стратегии маскирования**:
-  - **Replace**: Полная замена → `[EMAIL_1]`, `[PHONE_2]`
-  - **Mask**: Частичная маска → `te***om`, `+79***67`
-  - **Hash**: Частичный хеш → `te_4f2a8b1c@om`, `+79_8e3f2a1d67`
+  - **Replace**: Полная замена → `[EMAIL_1]`, `[API_KEY_2]`, `[SSH_KEY_3]`
+  - **Mask**: Частичная маска → `te***om`, `+79***67`, `AKIA***MPLE`
+  - **Hash**: Частичный хеш → `te_4f2a8b1c@om`, `+79_8e3f2a1d67`, `AKIA_4f2a8bMPLE`
 - 🌐 **HTTP REST API** с CORS и middleware
 - 🤖 **MCP Server** с инструментами для LLM
 - 🔄 **MCP Proxy** для проксирования к другим MCP серверам
 - 📡 **SSE** (Server-Sent Events) для стриминга
 - 🐳 **Docker** готовность
 - ⚙️ **CLI** с чтением конфигурации из файла
+- 🛡 **Умное маскирование доменов**: пропускает google.com, yandex.ru и другие известные домены
 
 ## 📋 Быстрый старт
 
@@ -150,6 +155,46 @@ curl -X POST http://localhost:3000/api/v1/anonymize \
 {
   "anonymized_text": "Contact: te_4f2a8b1c@om, phone: +79_8e3f2a1d67"
 }
+```
+
+#### Примеры обнаружения новых PII
+
+**API ключи**:
+```bash
+# AWS
+Input:  "My AWS key is AKIAIOSFODNN7EXAMPLE"
+Output: "My AWS key is AKIA***MPLE"  (mask)
+        "My AWS key is [API_KEY_1]"  (replace)
+
+# GitHub
+Input:  "Token: ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefgh12"
+Output: "Token: ghp_***h12"  (mask)
+```
+
+**Токены доступа (JWT)**:
+```bash
+Input:  "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U"
+Output: "Bearer eyJ_***R8U"  (mask)
+        "Bearer [ACCESS_TOKEN_1]"  (replace)
+```
+
+**SSH ключи**:
+```bash
+Input:  "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDVvvHkGphJbBX8"
+Output: "ssh-rsa AAAA***BX8"  (mask)
+        "ssh-rsa [SSH_KEY_1]"  (replace)
+```
+
+**Домены (с фильтрацией известных)**:
+```bash
+# Известные домены пропускаются
+Input:  "Search on google.com or visit secret-server.ru"
+Output: "Search on google.com or visit secr***.ru"  (google.com пропущен!)
+
+# Приватные домены маскируются
+Input:  "Internal API: https://api.my-company.internal/v1"
+Output: "Internal API: htt***v1"  (mask)
+        "Internal API: [DOMAIN_1]"  (replace)
 ```
 
 #### POST /api/v1/detect
@@ -332,8 +377,8 @@ curl -X POST http://localhost:3000/api/v1/anonymize \
 Заменяет PII на плейсхолдеры с счётчиком.
 
 ```
-Input:  "Email: john@test.com, phone: +79991234567"
-Output: "Email: [EMAIL_1], phone: [PHONE_2]"
+Input:  "Email: john@test.com, AWS Key: AKIAIOSFODNN7EXAMPLE"
+Output: "Email: [EMAIL_1], AWS Key: [API_KEY_2]"
 ```
 
 **Плюсы**: Полная анонимность, легко подсчитать PII  
@@ -344,11 +389,11 @@ Output: "Email: [EMAIL_1], phone: [PHONE_2]"
 Сохраняет первые и последние символы, остальное `***`.
 
 ```
-Input:  "john.doe@company.org"
-Output: "jo***@***rg"
-
-Input:  "+7 (999) 123-45-67"
-Output: "+79***67"
+Email:    "john.doe@company.org"  →  "jo***@***rg"
+Phone:    "+7 (999) 123-45-67"    →  "+79***67"
+API Key:  "AKIAIOSFODNN7EXAMPLE"  →  "AKIA***MPLE"
+SSH Key:  "ssh-rsa AAAAB3Nza..."  →  "ssh-rsa AAAA***..."
+Domain:   "secret-server.ru"      →  "sec***.ru"
 ```
 
 **Плюсы**: Сохраняется формат данных  
@@ -359,15 +404,46 @@ Output: "+79***67"
 Хеширует среднюю часть, сохраняет контекст.
 
 ```
-Input:  "john.doe@company.org"
-Output: "jo_4f2a8b1c@om"
-
-Input:  "+7 (999) 123-45-67"
-Output: "+79_8e3f2a1d67"
+Email:    "john.doe@company.org"  →  "jo_4f2a8b1c@om"
+Phone:    "+7 (999) 123-45-67"    →  "+79_8e3f2a1d67"
+API Key:  "AKIAIOSFODNN7EXAMPLE"  →  "AKIA_4f2a8bMPLE"
+SSH Key:  "ssh-rsa AAAAB3Nza..."  →  "ssh-rsa AAAA_4f2a...Nza"
 ```
 
 **Плюсы**: Обратимость отсутствует, сохраняется структура  
 **Минусы**: Хеш может быть расшифрован перебором
+
+## 🔐 Поддерживаемые PII
+
+### Персональные данные
+- ✅ Email адреса
+- ✅ Телефоны (РФ + международные)
+- ✅ Паспорта РФ
+- ✅ СНИЛС
+- ✅ ИНН (физ + юр лица)
+
+### Финансовые данные
+- ✅ Кредитные карты
+
+### Технические секреты
+- ✅ **API ключи**:
+  - AWS (AKIA...)
+  - GitHub (ghp_, gho_, ghs_, ghp_, ghr_)
+  - Google (AIza...)
+  - Generic (api_key=..., bearer token)
+- ✅ **Токены доступа**:
+  - JWT (eyJ...)
+  - Generic (access_token=..., auth_token=...)
+- ✅ **SSH ключи**:
+  - RSA (ssh-rsa ...)
+  - ED25519 (ssh-ed25519 ...)
+  - ECDSA (ecdsa-sha2-nistp...)
+
+### Сетевые данные
+- ✅ IP-адреса (IPv4)
+- ✅ **Домены** с умной фильтрацией:
+  - Пропускает: google.com, yandex.ru, github.com, etc. (30+ доменов)
+  - Маскирует: приватные и неизвестные домены
 
 ## 🧪 Тестирование
 

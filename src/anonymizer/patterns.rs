@@ -14,6 +14,10 @@ pub enum PIIType {
     Inn,
     Address,
     FullName,
+    ApiKey,
+    AccessToken,
+    SshKey,
+    Domain,
     Unknown,
 }
 
@@ -29,6 +33,10 @@ impl std::fmt::Display for PIIType {
             PIIType::Inn => write!(f, "INN"),
             PIIType::Address => write!(f, "ADDRESS"),
             PIIType::FullName => write!(f, "FULL_NAME"),
+            PIIType::ApiKey => write!(f, "API_KEY"),
+            PIIType::AccessToken => write!(f, "ACCESS_TOKEN"),
+            PIIType::SshKey => write!(f, "SSH_KEY"),
+            PIIType::Domain => write!(f, "DOMAIN"),
             PIIType::Unknown => write!(f, "UNKNOWN"),
         }
     }
@@ -122,20 +130,85 @@ pub fn get_all_patterns() -> Vec<PIIPattern> {
             0.93,
         ).unwrap(),
         
-        // ИНН физического лица
+        // API ключи (различные форматы)
         PIIPattern::with_confidence(
-            "inn_individual",
-            PIIType::Inn,
-            r"\b\d{12}\b",
-            0.85,
+            "api_key_generic",
+            PIIType::ApiKey,
+            r#"(?:api[_-]?key|apikey)[\s:="'"]+\s*([a-zA-Z0-9_\-]{20,})"#,
+            0.92,
         ).unwrap(),
         
-        // ИНН юридического лица
         PIIPattern::with_confidence(
-            "inn_legal",
-            PIIType::Inn,
-            r"\b\d{10}\b",
-            0.85,
+            "api_key_bearer",
+            PIIType::ApiKey,
+            r#"(?:bearer|token)[\s]+([a-zA-Z0-9_\-\.]{20,})"#,
+            0.90,
+        ).unwrap(),
+        
+        PIIPattern::with_confidence(
+            "api_key_aws",
+            PIIType::ApiKey,
+            r"AKIA[0-9A-Z]{16}",
+            0.98,
+        ).unwrap(),
+        
+        PIIPattern::with_confidence(
+            "api_key_github",
+            PIIType::ApiKey,
+            r"gh[pousr]_[A-Za-z0-9_]{36,}",
+            0.98,
+        ).unwrap(),
+        
+        PIIPattern::with_confidence(
+            "api_key_google",
+            PIIType::ApiKey,
+            r"AIza[0-9A-Za-z_\-]{35}",
+            0.97,
+        ).unwrap(),
+        
+        // Токены доступа
+        PIIPattern::with_confidence(
+            "access_token_jwt",
+            PIIType::AccessToken,
+            r"eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}",
+            0.96,
+        ).unwrap(),
+        
+        PIIPattern::with_confidence(
+            "access_token_generic",
+            PIIType::AccessToken,
+            r#"(?:access[_-]?token|auth[_-]?token)[\s:="'"]+\s*([a-zA-Z0-9_\-\.]{20,})"#,
+            0.88,
+        ).unwrap(),
+        
+        // SSH ключи
+        PIIPattern::with_confidence(
+            "ssh_key_rsa",
+            PIIType::SshKey,
+            r"ssh-rsa\s+[A-Za-z0-9+/]{20,}",
+            0.98,
+        ).unwrap(),
+        
+        PIIPattern::with_confidence(
+            "ssh_key_ed25519",
+            PIIType::SshKey,
+            r"ssh-ed25519\s+[A-Za-z0-9+/]{20,}",
+            0.98,
+        ).unwrap(),
+        
+        PIIPattern::with_confidence(
+            "ssh_key_ecdsa",
+            PIIType::SshKey,
+            r"ecdsa-sha2-nistp\d+\s+[A-Za-z0-9+/]{20,}",
+            0.97,
+        ).unwrap(),
+        
+        // Домены (кроме общеизвестных)
+        PIIPattern::with_confidence(
+            "domain_unknown",
+            PIIType::Domain,
+            r"(?:https?://)?(?:www\.)?([a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.(?:[a-zA-Z]{2,}))\b",
+            0.75,
         ).unwrap(),
     ]
 }
@@ -143,6 +216,41 @@ pub fn get_all_patterns() -> Vec<PIIPattern> {
 /// Получение паттерна по имени
 pub fn get_pattern_by_name(name: &str) -> Option<PIIPattern> {
     get_all_patterns().into_iter().find(|p| p.name == name)
+}
+
+/// Список общеизвестных доменов, которые не нужно маскировать
+const KNOWN_DOMAINS: &[&str] = &[
+    "google.com", "google.ru", "google.org", "google.net",
+    "yandex.ru", "yandex.com", "yandex.net", "ya.ru",
+    "mail.ru", "mail.com",
+    "gmail.com", "yahoo.com", "yahoo.ru",
+    "outlook.com", "hotmail.com",
+    "microsoft.com", "microsoftonline.com",
+    "apple.com", "icloud.com",
+    "amazon.com", "amazonaws.com",
+    "github.com", "gitlab.com", "bitbucket.org",
+    "stackoverflow.com",
+    "wikipedia.org",
+    "facebook.com", "fb.com", "instagram.com",
+    "twitter.com", "x.com",
+    "linkedin.com",
+    "youtube.com", "youtu.be",
+    "telegram.org", "t.me",
+    "whatsapp.com",
+    "docker.com", "hub.docker.com",
+    "npmjs.com", "npmjs.org",
+    "crates.io", "rust-lang.org",
+];
+
+/// Проверка, является ли домен общеизвестным
+pub fn is_known_domain(domain: &str) -> bool {
+    let domain_lower = domain.to_lowercase();
+    KNOWN_DOMAINS.iter().any(|known| domain_lower == *known || domain_lower.ends_with(&format!(".{}", known)))
+}
+
+/// Фильтрация доменов - исключение общеизвестных
+pub fn filter_known_domains(domains: Vec<String>) -> Vec<String> {
+    domains.into_iter().filter(|d| !is_known_domain(d)).collect()
 }
 
 #[cfg(test)]
@@ -219,6 +327,76 @@ mod tests {
     #[test]
     fn test_get_all_patterns_count() {
         let patterns = get_all_patterns();
-        assert!(patterns.len() >= 7); // Минимум 7 паттернов
+        assert!(patterns.len() >= 16); // Минимум 16 паттернов (включая новые)
+    }
+
+    #[test]
+    fn test_api_key_aws_pattern() {
+        let patterns = get_all_patterns();
+        let aws_pattern = patterns.iter().find(|p| p.name == "api_key_aws").unwrap();
+        
+        assert!(aws_pattern.pattern.is_match("AKIAIOSFODNN7EXAMPLE"));
+        assert!(!aws_pattern.pattern.is_match("AKIA123"));
+    }
+
+    #[test]
+    fn test_api_key_github_pattern() {
+        let patterns = get_all_patterns();
+        let github_pattern = patterns.iter().find(|p| p.name == "api_key_github").unwrap();
+        
+        assert!(github_pattern.pattern.is_match("ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefgh12"));
+        assert!(!github_pattern.pattern.is_match("ghp_short"));
+    }
+
+    #[test]
+    fn test_jwt_token_pattern() {
+        let patterns = get_all_patterns();
+        let jwt_pattern = patterns.iter().find(|p| p.name == "access_token_jwt").unwrap();
+        
+        assert!(jwt_pattern.pattern.is_match("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U"));
+        assert!(!jwt_pattern.pattern.is_match("not.a.jwt"));
+    }
+
+    #[test]
+    fn test_ssh_key_rsa_pattern() {
+        let patterns = get_all_patterns();
+        let ssh_pattern = patterns.iter().find(|p| p.name == "ssh_key_rsa").unwrap();
+        
+        assert!(ssh_pattern.pattern.is_match("ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDVvvHkGphJbBX8"));
+        assert!(!ssh_pattern.pattern.is_match("ssh-rsa short"));
+    }
+
+    #[test]
+    fn test_ssh_key_ed25519_pattern() {
+        let patterns = get_all_patterns();
+        let ssh_pattern = patterns.iter().find(|p| p.name == "ssh_key_ed25519").unwrap();
+        
+        assert!(ssh_pattern.pattern.is_match("ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG"));
+        assert!(!ssh_pattern.pattern.is_match("ssh-ed25519 short"));
+    }
+
+    #[test]
+    fn test_is_known_domain() {
+        assert!(is_known_domain("google.com"));
+        assert!(is_known_domain("yandex.ru"));
+        assert!(is_known_domain("github.com"));
+        assert!(is_known_domain("mail.google.com"));
+        assert!(!is_known_domain("my-private-company.com"));
+        assert!(!is_known_domain("secret-server.ru"));
+    }
+
+    #[test]
+    fn test_filter_known_domains() {
+        let domains = vec![
+            "google.com".to_string(),
+            "my-secret-server.com".to_string(),
+            "yandex.ru".to_string(),
+            "internal-api.company.ru".to_string(),
+        ];
+        
+        let filtered = filter_known_domains(domains);
+        assert_eq!(filtered.len(), 2);
+        assert!(filtered.contains(&"my-secret-server.com".to_string()));
+        assert!(filtered.contains(&"internal-api.company.ru".to_string()));
     }
 }

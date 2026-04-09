@@ -1,6 +1,6 @@
 use crate::config::AnonymizerSettings;
 use crate::models::{AnonymizeRequest, AnonymizeResponse, DetectedPII, PIIType};
-use crate::anonymizer::patterns::{get_all_patterns, PIIPattern};
+use crate::anonymizer::patterns::{get_all_patterns, PIIPattern, is_known_domain};
 use crate::anonymizer::strategies::AnonymizationStrategy;
 use tracing::{debug, info};
 use std::collections::HashSet;
@@ -41,6 +41,17 @@ impl AnonymizerEngine {
 
         for pattern in &self.patterns {
             for mat in pattern.pattern.find_iter(text) {
+                // Пропуск общеизвестных доменов
+                if pattern.pii_type == crate::anonymizer::patterns::PIIType::Domain {
+                    let domain_value = mat.as_str();
+                    // Извлечение чистого домена из URL
+                    let clean_domain = self.extract_domain_from_match(domain_value);
+                    if is_known_domain(&clean_domain) {
+                        debug!("⏭️ Пропущен известный домен: {}", clean_domain);
+                        continue;
+                    }
+                }
+                
                 // Проверка на дубликаты (пересечения)
                 let is_duplicate = matches.iter().any(|(start, end, _, _)| {
                     mat.start() >= *start && mat.end() <= *end
@@ -104,6 +115,21 @@ impl AnonymizerEngine {
             .collect()
     }
 
+    /// Извлечение чистого домена из match (может содержать http://, www и т.д.)
+    fn extract_domain_from_match(&self, matched_text: &str) -> String {
+        // Удаление протокола
+        let without_protocol = matched_text
+            .trim_start_matches("http://")
+            .trim_start_matches("https://");
+        
+        // Удаление www.
+        let without_www = without_protocol
+            .trim_start_matches("www.");
+        
+        // Удаление пути
+        without_www.split('/').next().unwrap_or(without_www).to_string()
+    }
+
     /// Маппинг внутреннего PIIType на модель
     fn map_pii_type(&self, pii_type: &crate::anonymizer::patterns::PIIType) -> PIIType {
         match pii_type {
@@ -116,6 +142,10 @@ impl AnonymizerEngine {
             crate::anonymizer::patterns::PIIType::Inn => PIIType::Inn,
             crate::anonymizer::patterns::PIIType::Address => PIIType::Address,
             crate::anonymizer::patterns::PIIType::FullName => PIIType::FullName,
+            crate::anonymizer::patterns::PIIType::ApiKey => PIIType::ApiKey,
+            crate::anonymizer::patterns::PIIType::AccessToken => PIIType::AccessToken,
+            crate::anonymizer::patterns::PIIType::SshKey => PIIType::SshKey,
+            crate::anonymizer::patterns::PIIType::Domain => PIIType::Domain,
             crate::anonymizer::patterns::PIIType::Unknown => PIIType::Unknown,
         }
     }
@@ -126,6 +156,15 @@ impl AnonymizerEngine {
 
         for pattern in &self.patterns {
             for mat in pattern.pattern.find_iter(text) {
+                // Пропуск общеизвестных доменов
+                if pattern.pii_type == crate::anonymizer::patterns::PIIType::Domain {
+                    let domain_value = mat.as_str();
+                    let clean_domain = self.extract_domain_from_match(domain_value);
+                    if is_known_domain(&clean_domain) {
+                        continue;
+                    }
+                }
+                
                 detected.push(DetectedPII {
                     pii_type: self.map_pii_type(&pattern.pii_type),
                     value: mat.as_str().to_string(),
@@ -162,6 +201,12 @@ mod tests {
                 "credit_card".to_string(),
                 "ip_address".to_string(),
                 "snils".to_string(),
+                "api_key_aws".to_string(),
+                "api_key_github".to_string(),
+                "access_token_jwt".to_string(),
+                "ssh_key_rsa".to_string(),
+                "ssh_key_ed25519".to_string(),
+                "domain_unknown".to_string(),
             ],
         };
         AnonymizerEngine::new(&settings)
@@ -173,9 +218,10 @@ mod tests {
         let text = "Contact: test@example.com for info";
         let detected = engine.detect_pii(text);
         
-        assert_eq!(detected.len(), 1);
-        assert_eq!(detected[0].pii_type, PIIType::Email);
-        assert_eq!(detected[0].value, "test@example.com");
+        // Email + возможно домен
+        assert!(detected.len() >= 1);
+        assert!(detected.iter().any(|p| p.pii_type == PIIType::Email));
+        assert_eq!(detected.iter().find(|p| p.pii_type == PIIType::Email).unwrap().value, "test@example.com");
     }
 
     #[test]
@@ -278,5 +324,66 @@ mod tests {
         
         assert!(!detected.is_empty());
         assert!(detected[0].confidence > 0.0 && detected[0].confidence <= 1.0);
+    }
+
+    #[test]
+    fn test_detect_aws_api_key() {
+        let engine = create_test_engine();
+        let text = "My AWS key is AKIAIOSFODNN7EXAMPLE for access";
+        let detected = engine.detect_pii(text);
+        
+        assert!(detected.iter().any(|p| p.pii_type == PIIType::ApiKey));
+    }
+
+    #[test]
+    fn test_detect_jwt_token() {
+        let engine = create_test_engine();
+        let text = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U";
+        let detected = engine.detect_pii(text);
+        
+        assert!(detected.iter().any(|p| p.pii_type == PIIType::AccessToken));
+    }
+
+    #[test]
+    fn test_detect_ssh_key() {
+        let engine = create_test_engine();
+        let text = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDVvvHkGphJbBX8rPnJqL3VzRmK";
+        let detected = engine.detect_pii(text);
+        
+        assert!(detected.iter().any(|p| p.pii_type == PIIType::SshKey));
+    }
+
+    #[test]
+    fn test_domain_masking_skips_known() {
+        let engine = create_test_engine();
+        let text = "Visit https://google.com for search and http://my-secret-server.ru for internal";
+        let detected = engine.detect_pii(text);
+        
+        // google.com должен быть пропущен
+        assert!(!detected.iter().any(|p| 
+            p.pii_type == PIIType::Domain && p.value.contains("google.com")
+        ));
+        
+        // my-secret-server.ru должен быть обнаружен
+        assert!(detected.iter().any(|p| 
+            p.pii_type == PIIType::Domain && p.value.contains("my-secret-server")
+        ));
+    }
+
+    #[test]
+    fn test_anonymize_skips_known_domains() {
+        let engine = create_test_engine();
+        let request = AnonymizeRequest {
+            text: "Search on google.com or visit my-private-company.ru".to_string(),
+            strategy: None,
+        };
+        let response = engine.anonymize(&request);
+        
+        // google.com должен остаться
+        assert!(response.anonymized_text.contains("google.com"));
+        
+        // my-private-company.ru должен быть замаскирован
+        assert!(!response.anonymized_text.contains("my-private-company.ru") || 
+                response.anonymized_text.contains("***"));
     }
 }

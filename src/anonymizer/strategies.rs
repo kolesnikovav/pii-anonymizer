@@ -121,6 +121,21 @@ impl AnonymizationStrategy {
             return (3, 2);
         }
         
+        // Для API ключей и токенов - первые 4 и последние 4
+        if len >= 32 {
+            return (4, 4);
+        }
+        
+        // Для SSH ключей - первые 8 и последние 8
+        if len >= 100 {
+            return (8, 8);
+        }
+        
+        // Для доменов - первые 3 и последние 3
+        if value.contains('.') && !value.contains('@') {
+            return (3.min(len), 3.min(len));
+        }
+        
         // Для паспортов - первые 2 и последние 2
         if len == 10 || len == 11 {
             return (2, 2);

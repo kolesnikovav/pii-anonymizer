@@ -39,6 +39,10 @@ pub enum PIIType {
     Inn,
     Address,
     FullName,
+    ApiKey,
+    AccessToken,
+    SshKey,
+    Domain,
     Unknown,
 }
 
@@ -54,6 +58,10 @@ impl std::fmt::Display for PIIType {
             PIIType::Inn => write!(f, "INN"),
             PIIType::Address => write!(f, "ADDRESS"),
             PIIType::FullName => write!(f, "FULL_NAME"),
+            PIIType::ApiKey => write!(f, "API_KEY"),
+            PIIType::AccessToken => write!(f, "ACCESS_TOKEN"),
+            PIIType::SshKey => write!(f, "SSH_KEY"),
+            PIIType::Domain => write!(f, "DOMAIN"),
             PIIType::Unknown => write!(f, "UNKNOWN"),
         }
     }
