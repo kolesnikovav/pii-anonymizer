@@ -10,7 +10,8 @@
       "Bash(cargo add *)",
       "Bash(cargo build)",
       "Bash(del *)",
-      "Bash(rm *)"
+      "Bash(rm *)",
+      "Bash(grep *)"
     ]
   },
   "$version": 3

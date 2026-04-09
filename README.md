@@ -62,16 +62,15 @@ server:
   host: "0.0.0.0"
   port: 3000
 
-anonymizer:
-  default_strategy: "mask"  # replace, mask, hash
-  patterns:
-    - email
-    - phone_ru
-    - passport_ru
-    - credit_card
-    - ip_address
-    - snils
-    - inn
+default_strategy: "mask"  # replace, mask, hash
+patterns:
+  - email
+  - phone_ru
+  - passport_ru
+  - credit_card
+  - ip_address
+  - snils
+  - inn
 
 mcp:
   enabled: true
@@ -110,7 +109,7 @@ Options:
 ```bash
 ANONYMIZER__SERVER__HOST=0.0.0.0
 ANONYMIZER__SERVER__PORT=3000
-ANONYMIZER__ANONYMIZER__DEFAULT_STRATEGY=mask
+ANONYMIZER__DEFAULT_STRATEGY=mask
 ANONYMIZER__LOGGING__LEVEL=info
 ```
 
@@ -671,7 +670,7 @@ services:
     volumes:
       - ./config:/app/config:ro
     environment:
-      - ANONYMIZER__ANONYMIZER__DEFAULT_STRATEGY=hash
+      - ANONYMIZER__DEFAULT_STRATEGY=hash
 ```
 
 ## 📊 Производительность

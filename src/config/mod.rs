@@ -4,6 +4,7 @@ use serde::Deserialize;
 #[derive(Debug, Deserialize, Clone)]
 pub struct Settings {
     pub server: ServerSettings,
+    #[serde(flatten)]
     pub anonymizer: AnonymizerSettings,
     pub mcp: McpSettings,
     pub proxy: ProxySettings,
@@ -57,7 +58,6 @@ impl Settings {
             .add_source(File::with_name(path).required(true))
             .add_source(
                 Environment::with_prefix("ANONYMIZER")
-                    .prefix_separator("_")
                     .separator("__"),
             )
             .build()?;

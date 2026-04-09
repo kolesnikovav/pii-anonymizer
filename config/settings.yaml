@@ -4,23 +4,22 @@ server:
   port: 3000
   workers: 4
 
-# Anonymizer settings
-anonymizer:
-  default_strategy: "mask"  # replace, mask, hash
-  patterns:
-    - email
-    - phone_ru
-    - passport_ru
-    - credit_card
-    - ip_address
-    - snils
-    - inn
-    - api_key_aws
-    - api_key_github
-    - access_token_jwt
-    - ssh_key_rsa
-    - ssh_key_ed25519
-    - domain_unknown
+# Anonymizer settings (flattened into root)
+default_strategy: "mask"  # replace, mask, hash
+patterns:
+  - email
+  - phone_ru
+  - passport_ru
+  - credit_card
+  - ip_address
+  - snils
+  - inn
+  - api_key_aws
+  - api_key_github
+  - access_token_jwt
+  - ssh_key_rsa
+  - ssh_key_ed25519
+  - domain_unknown
 
 # MCP configuration
 mcp:
