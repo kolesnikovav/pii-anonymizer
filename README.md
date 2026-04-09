@@ -243,7 +243,131 @@ SSE стриминг
 curl -N http://localhost:3000/api/v1/sse/stream
 ```
 
+#### GET /sse
+MCP SSE endpoint для подключения клиентов к серверу как к MCP серверу.
+
+```bash
+curl -N http://localhost:3000/sse
+curl -N "http://localhost:3000/sse?session_id=my-session"
+```
+
+При подключении клиент получает событие инициализации с информацией о сервере.
+
+#### POST /sse/message
+Отправка MCP JSON-RPC сообщений на сервер.
+
+```bash
+# Initialize
+curl -X POST http://localhost:3000/sse/message \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "initialize",
+    "params": {}
+  }'
+
+# Список инструментов
+curl -X POST http://localhost:3000/sse/message \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 2,
+    "method": "tools/list",
+    "params": {}
+  }'
+
+# Вызов инструмента anonymize
+curl -X POST http://localhost:3000/sse/message \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 3,
+    "method": "tools/call",
+    "params": {
+      "name": "anonymize",
+      "arguments": {
+        "text": "Contact: john@example.com",
+        "strategy": "mask"
+      }
+    }
+  }'
+
+# Вызов инструмента detect_pii
+curl -X POST http://localhost:3000/sse/message \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 4,
+    "method": "tools/call",
+    "params": {
+      "name": "detect_pii",
+      "arguments": {
+        "text": "Email: user@test.com, Phone: +7 (999) 123-45-67"
+      }
+    }
+  }'
+```
+
+**Ответ tools/list**:
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "result": {
+    "tools": [
+      {
+        "name": "anonymize",
+        "description": "Анонимизировать текст, удаляя PII данные",
+        "input_schema": { ... }
+      },
+      {
+        "name": "detect_pii",
+        "description": "Обнаружить PII данные в тексте",
+        "input_schema": { ... }
+      },
+      {
+        "name": "batch_anonymize",
+        "description": "Пакетная анонимизация нескольких текстов",
+        "input_schema": { ... }
+      }
+    ]
+  }
+}
+```
+
+**Ответ tools/call (anonymize)**:
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 3,
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"anonymized_text\":\"Contact: jo***@***e.com\",\"detected_pii_count\":1,...}"
+      }
+    ]
+  }
+}
+```
+
 ## 🤖 MCP Интеграция
+
+### Поддержка SSE Transport
+
+Сервер поддерживает MCP через SSE transport, что позволяет подключаться клиентам, использующим SSE для коммуникации.
+
+**Архитектура**:
+1. Клиент подключается к `GET /sse` для получения SSE stream
+2. Клиент отправляет JSON-RPC сообщения на `POST /sse/message`
+3. Сервер обрабатывает запросы и возвращает результаты через оба канала
+
+**Поддерживаемые JSON-RPC методы**:
+- `initialize` - инициализация подключения
+- `notifications/initialized` - уведомление о завершении инициализации
+- `tools/list` - получение списка доступных инструментов
+- `tools/call` - вызов конкретного инструмента
 
 ### Доступные инструменты
 

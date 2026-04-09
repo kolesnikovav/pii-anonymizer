@@ -75,15 +75,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let anonymizer = anonymizer::AnonymizerEngine::new(&settings.anonymizer);
     info!("🔍 Анонимизатор инициализирован");
 
+    // Инициализация MCP сервера
+    let mcp_server = mcp::McpServer::new(
+        anonymizer.clone(),
+        &settings.mcp.server_name,
+        &settings.mcp.server_version,
+    );
+    info!("🤖 MCP Server инициализирован: {} v{}", 
+        settings.mcp.server_name, 
+        settings.mcp.server_version
+    );
+
     // Режим MCP
     if args.mcp_mode == "stdio" {
         info!("🤖 Запуск в режиме MCP stdio");
-        let mcp_server = mcp::McpServer::new(
-            anonymizer.clone(),
-            &settings.mcp.server_name,
-            &settings.mcp.server_version,
-        );
-        
+
         info!("MCP инструменты:");
         let tools = mcp_server.get_tools();
         if let Some(tools_arr) = tools.get("tools").and_then(|t| t.as_array()) {
@@ -93,21 +99,32 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
             }
         }
-        
+
         // В режиме stdio просто ждём
         shutdown_signal().await;
         return Ok(());
     }
-    
-    // HTTP режим
+
+    // HTTP режим - создаём основной роутер
     let app = api::create_router(settings.clone(), anonymizer);
-    
+
+    // Создаём MCP SSE роутер
+    let mcp_state = sse::mcp_handler::SseMcpState {
+        mcp_server: mcp_server.clone(),
+    };
+    let mcp_router = sse::create_mcp_router(mcp_state);
+
+    // Объединяем роутеры
+    let app = app.merge(mcp_router);
+
     let addr = format!("{}:{}", settings.server.host, settings.server.port);
     info!("🌐 HTTP сервер слушает на {}", addr);
     info!("📖 Документация API: http://{}/api/v1/health", addr);
-    
+    info!("🤖 MCP SSE endpoint: http://{}/sse", addr);
+    info!("📨 MCP message endpoint: http://{}/sse/message", addr);
+
     let listener = tokio::net::TcpListener::bind(&addr).await?;
-    
+
     axum::serve(listener, app)
         .with_graceful_shutdown(shutdown_signal())
         .await?;
