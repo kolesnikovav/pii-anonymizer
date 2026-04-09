@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  pii-anonymizer:
+    build: .
+    container_name: pii-anonymizer
+    ports:
+      - "3000:3000"
+    environment:
+      - SERVER_HOST=0.0.0.0
+      - SERVER_PORT=3000
+      - ANONYMIZER_STRATEGY=mask
+      - LOG_LEVEL=info
+      - MCP_ENABLED=true
+    volumes:
+      - ./config:/app/config:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
