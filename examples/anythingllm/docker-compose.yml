@@ -1,0 +1,51 @@
+services:
+  # PII Anonymizer MCP Server
+  pii-anonymizer:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    container_name: pii-anonymizer
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - ../../config:/app/config:ro
+    environment:
+      - ANONYMIZER__DEFAULT_STRATEGY=mask
+      - RUST_LOG=info
+    networks:
+      - mcp-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/v1/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # AnythingLLM
+  anythingllm:
+    image: mintplexlabs/anythingllm:latest
+    container_name: anythingllm
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    cap_add:
+      - SYS_ADMIN
+    volumes:
+      - anythingllm-storage:/app/server/storage
+    environment:
+      - STORAGE_DIR=/app/server/storage
+      - JWT_SECRET=change-me-to-random-string
+    depends_on:
+      pii-anonymizer:
+        condition: service_healthy
+    networks:
+      - mcp-network
+
+volumes:
+  anythingllm-storage:
+    driver: local
+
+networks:
+  mcp-network:
+    driver: bridge
