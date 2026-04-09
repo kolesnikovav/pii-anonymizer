@@ -11,7 +11,12 @@
       "Bash(cargo build)",
       "Bash(del *)",
       "Bash(rm *)",
-      "Bash(grep *)"
+      "Bash(grep *)",
+      "Bash(cargo doc *)",
+      "Bash(cargo metadata *)",
+      "Bash(python3 *)",
+      "Bash(cargo search *)",
+      "Bash(cargo remove *)"
     ]
   },
   "$version": 3

@@ -7,7 +7,6 @@ mod config;
 mod anonymizer;
 mod api;
 mod mcp;
-mod sse;
 mod middleware;
 mod models;
 
@@ -47,13 +46,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Инициализация логирования
     init_logging(&args.log_level);
-    
+
     info!("🚀 Запуск PII Anonymizer MCP Server");
     info!("📋 Конфигурация: {}", args.config);
 
     // Загрузка конфигурации из файла
     let mut settings = config::Settings::from_file(&args.config)?;
-    
+
     // Переопределение из CLI аргументов
     if let Some(ref host) = args.host {
         settings.server.host = host.clone();
@@ -65,70 +64,75 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         settings.anonymizer.default_strategy = strategy.clone();
     }
 
-    info!("⚙️  Настройки: {}:{}, стратегия: {}", 
-        settings.server.host, 
+    info!("⚙️  Настройки: {}:{}, стратегия: {}",
+        settings.server.host,
         settings.server.port,
         settings.anonymizer.default_strategy
     );
-    
+
     // Инициализация анонимизатора
     let anonymizer = anonymizer::AnonymizerEngine::new(&settings.anonymizer);
     info!("🔍 Анонимизатор инициализирован");
 
-    // Инициализация MCP сервера
-    let mcp_server = mcp::McpServer::new(
-        anonymizer.clone(),
-        &settings.mcp.server_name,
-        &settings.mcp.server_version,
-    );
-    info!("🤖 MCP Server инициализирован: {} v{}", 
-        settings.mcp.server_name, 
-        settings.mcp.server_version
-    );
-
-    // Режим MCP
+    // Режим MCP stdio
     if args.mcp_mode == "stdio" {
         info!("🤖 Запуск в режиме MCP stdio");
-
-        info!("MCP инструменты:");
-        let tools = mcp_server.get_tools();
-        if let Some(tools_arr) = tools.get("tools").and_then(|t| t.as_array()) {
-            for tool in tools_arr {
-                if let Some(name) = tool.get("name").and_then(|n| n.as_str()) {
-                    info!("  - {}", name);
-                }
-            }
-        }
-
-        // В режиме stdio просто ждём
-        shutdown_signal().await;
+        run_mcp_stdio(anonymizer).await?;
         return Ok(());
     }
 
-    // HTTP режим - создаём основной роутер
-    let app = api::create_router(settings.clone(), anonymizer);
+    // HTTP режим
+    run_http_server(settings, anonymizer).await?;
 
-    // Создаём MCP SSE роутер
-    let mcp_state = sse::mcp_handler::SseMcpState {
-        mcp_server: mcp_server.clone(),
+    Ok(())
+}
+
+/// Запуск MCP в режиме stdio (через rmcp io transport)
+async fn run_mcp_stdio(engine: anonymizer::AnonymizerEngine) -> Result<(), Box<dyn std::error::Error>> {
+    use rmcp::service::RunningService;
+    use rmcp::ServiceExt;
+
+    let service = mcp::server::AnonymizerService::new(engine);
+    let transport = rmcp::transport::stdio();
+    let server: RunningService<_, _> = service.serve(transport).await?;
+    server.waiting().await?;
+    Ok(())
+}
+
+/// Запуск HTTP сервера с REST API и MCP SSE
+async fn run_http_server(
+    settings: config::Settings,
+    engine: anonymizer::AnonymizerEngine,
+) -> Result<(), Box<dyn std::error::Error>> {
+    use rmcp::ServiceExt;
+    use rmcp::transport::sse_server::{SseServer, SseServerConfig};
+
+    // Создаём rmcp MCP сервис
+    let _mcp_service = mcp::server::AnonymizerService::new(engine.clone());
+
+    // Запускаем rmcp SSE сервер
+    let bind_addr = format!("{}:{}", settings.server.host, settings.server.port)
+        .parse::<std::net::SocketAddr>()?;
+
+    let sse_config = SseServerConfig {
+        bind: bind_addr,
+        sse_path: "/sse".to_string(),
+        post_path: "/message".to_string(),
+        ct: tokio_util::sync::CancellationToken::new(),
     };
-    let mcp_router = sse::create_mcp_router(mcp_state);
 
-    // Объединяем роутеры
-    let app = app.merge(mcp_router);
+    let sse_server = SseServer::serve_with_config(sse_config).await?;
+    info!("🤖 MCP SSE сервер запущен на {}", bind_addr);
+    info!("📡 SSE endpoint: http://{}/sse", bind_addr);
+    info!("📨 Message endpoint: http://{}/message?sessionId=<id>", bind_addr);
 
-    let addr = format!("{}:{}", settings.server.host, settings.server.port);
-    info!("🌐 HTTP сервер слушает на {}", addr);
-    info!("📖 Документация API: http://{}/api/v1/health", addr);
-    info!("🤖 MCP SSE endpoint: http://{}/sse", addr);
-    info!("📨 MCP message endpoint: http://{}/sse/message", addr);
+    // Привязываем сервис к SSE серверу
+    let service_factory = move || mcp::server::AnonymizerService::new(engine.clone());
+    let _cancel_token = sse_server.with_service(service_factory);
 
-    let listener = tokio::net::TcpListener::bind(&addr).await?;
+    info!("MCP сервер готов к подключению клиентов");
 
-    axum::serve(listener, app)
-        .with_graceful_shutdown(shutdown_signal())
-        .await?;
-    
+    shutdown_signal().await;
     Ok(())
 }
 

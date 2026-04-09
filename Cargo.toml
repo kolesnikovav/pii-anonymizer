@@ -46,8 +46,10 @@ tokio-stream = "0.1"
 utoipa = { version = "4.2", features = ["axum_extras"] }
 thiserror = "1.0"
 async-trait = "0.1"
-rmcp = { version = "0.1", features = ["server", "client"] }
+rmcp = { version = "0.1", features = ["server", "client", "transport-sse-server", "transport-io"] }
 clap = { version = "4.4", features = ["derive"] }
+schemars = "0.8"
+tokio-util = "0.7.18"
 
 [dev-dependencies]
 tokio-test = "0.4"
