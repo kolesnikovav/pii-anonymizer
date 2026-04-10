@@ -36,23 +36,47 @@ impl ProxyMcpService {
 
     /// Получить все инструменты (свои + прокси)
     pub async fn all_tools(&self) -> Vec<Tool> {
-        let empty_schema = std::sync::Arc::new(serde_json::json!({"type": "object"}).as_object().unwrap().clone());
-        
+        let anonymize_schema = std::sync::Arc::new(serde_json::json!({
+            "type": "object",
+            "properties": {
+                "text": { "type": "string", "description": "Текст для анонимизации" },
+                "strategy": { "type": "string", "description": "Стратегия: mask, replace, hash", "enum": ["mask", "replace", "hash"] }
+            },
+            "required": ["text"]
+        }).as_object().unwrap().clone());
+
+        let detect_pii_schema = std::sync::Arc::new(serde_json::json!({
+            "type": "object",
+            "properties": {
+                "text": { "type": "string", "description": "Текст для анализа" }
+            },
+            "required": ["text"]
+        }).as_object().unwrap().clone());
+
+        let batch_schema = std::sync::Arc::new(serde_json::json!({
+            "type": "object",
+            "properties": {
+                "texts": { "type": "array", "items": { "type": "string" }, "description": "Список текстов" },
+                "strategy": { "type": "string", "description": "Стратегия: mask, replace, hash" }
+            },
+            "required": ["texts"]
+        }).as_object().unwrap().clone());
+
         let mut tools = vec![
             Tool {
                 name: "anonymize".into(),
                 description: "Анонимизировать текст, удаляя PII данные".into(),
-                input_schema: empty_schema.clone(),
+                input_schema: anonymize_schema,
             },
             Tool {
                 name: "detect_pii".into(),
                 description: "Обнаружить PII данные в тексте".into(),
-                input_schema: empty_schema.clone(),
+                input_schema: detect_pii_schema,
             },
             Tool {
                 name: "batch_anonymize".into(),
                 description: "Пакетная анонимизация нескольких текстов".into(),
-                input_schema: empty_schema,
+                input_schema: batch_schema,
             },
         ];
 
