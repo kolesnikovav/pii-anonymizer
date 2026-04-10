@@ -6,8 +6,8 @@ use tracing::info;
 
 use crate::anonymizer::AnonymizerEngine;
 
-/// Сервис для анонимизации PII — реализует rmcp ServerHandler
-#[derive(Debug, Clone)]
+/// Сервис для анонимизации PII
+#[derive(Clone)]
 pub struct AnonymizerService {
     engine: AnonymizerEngine,
 }
@@ -97,7 +97,7 @@ rmcp::tool_box!(AnonymizerService { anonymize, detect_pii, batch_anonymize });
 impl ServerHandler for AnonymizerService {
     fn get_info(&self) -> ServerInfo {
         ServerInfo {
-            instructions: Some("Сервис для обнаружения и анонимизации PII данных в тексте. Поддерживает email, телефоны, паспорта РФ, СНИЛС, ИНН, кредитные карты, API ключи, JWT токены, SSH ключи и домены.".into()),
+            instructions: Some("Сервис для обнаружения и анонимизации PII данных в тексте.".into()),
             ..Default::default()
         }
     }

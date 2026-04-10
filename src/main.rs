@@ -104,13 +104,45 @@ async fn run_http_server(
     settings: config::Settings,
     engine: anonymizer::AnonymizerEngine,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    use rmcp::ServiceExt;
     use rmcp::transport::sse_server::{SseServer, SseServerConfig};
 
-    // Создаём rmcp MCP сервис
-    let _mcp_service = mcp::server::AnonymizerService::new(engine.clone());
+    // Создаём MCP сервис
+    let mcp_service = mcp::server::AnonymizerService::new(engine.clone());
 
-    // Запускаем Axum health server на отдельном порту (3001 для health)
+    // Подключаемся к внешним MCP серверам (если есть в конфигурации)
+    let anonymizing_proxy = if !settings.proxy.upstream_servers.is_empty() {
+        info!("🔌 Подключение к {} внешним MCP серверам...", settings.proxy.upstream_servers.len());
+        
+        let mut connections = Vec::new();
+        
+        for (name, config) in &settings.proxy.upstream_servers {
+            if !config.enabled {
+                info!("   ⊘ {} отключён, пропускаем", name);
+                continue;
+            }
+
+            match mcp::McpUpstreamConnection::connect(name.clone(), config).await {
+                Ok(conn) => {
+                    info!("   ✅ {} подключён ({} инструментов)", name, conn.tools.len());
+                    connections.push(conn);
+                }
+                Err(e) => {
+                    info!("   ❌ {} ошибка: {}", name, e);
+                }
+            }
+        }
+
+        if !connections.is_empty() {
+            let proxy_manager = mcp::McpProxyManager::new(connections);
+            Some(mcp::AnonymizingProxy::new(proxy_manager, engine.clone()))
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+
+    // Запускаем Axum health server на отдельном порту
     let health_app = axum::Router::new()
         .route("/api/v1/health", axum::routing::get(|| async { "OK" }));
 
@@ -140,11 +172,10 @@ async fn run_http_server(
     info!("📡 SSE endpoint: http://{}/sse", bind_addr);
     info!("📨 Message endpoint: http://{}/message?sessionId=<id>", bind_addr);
 
-    // Привязываем сервис к SSE серверу
-    let service_factory = move || mcp::server::AnonymizerService::new(engine.clone());
-    let _cancel_token = sse_server.with_service(service_factory);
-
     info!("MCP сервер готов к подключению клиентов");
+    if let Some(proxy) = &anonymizing_proxy {
+        info!("🌐 Прокси активен с {} инструментами", proxy.proxy.get_tools().len());
+    }
 
     shutdown_signal().await;
     Ok(())
