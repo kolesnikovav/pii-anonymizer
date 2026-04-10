@@ -36,7 +36,7 @@ impl ProxyMcpService {
 
     /// Получить все инструменты (свои + прокси)
     pub async fn all_tools(&self) -> Vec<Tool> {
-        let empty_schema = std::sync::Arc::new(serde_json::Map::new());
+        let empty_schema = std::sync::Arc::new(serde_json::json!({"type": "object"}).as_object().unwrap().clone());
         
         let mut tools = vec![
             Tool {
@@ -60,9 +60,14 @@ impl ProxyMcpService {
         if let Some(p) = proxy.as_ref() {
             for tool in p.proxy.get_tools() {
                 let schema = if let serde_json::Value::Object(m) = tool.input_schema {
+                    // Убедимся что schema содержит "type": "object"
+                    let mut m = m.clone();
+                    if !m.contains_key("type") {
+                        m.insert("type".to_string(), serde_json::json!("object"));
+                    }
                     std::sync::Arc::new(m)
                 } else {
-                    std::sync::Arc::new(serde_json::Map::new())
+                    std::sync::Arc::new(serde_json::json!({"type": "object"}).as_object().unwrap().clone())
                 };
                 
                 tools.push(Tool {

@@ -99,22 +99,22 @@ async fn run_mcp_stdio(engine: anonymizer::AnonymizerEngine) -> Result<(), Box<d
     Ok(())
 }
 
-/// Запуск HTTP сервера с REST API и MCP SSE
+/// Запуск HTTP сервера с кастомным SSE транспортом для MCP
 async fn run_http_server(
     settings: config::Settings,
     engine: anonymizer::AnonymizerEngine,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    use rmcp::transport::sse_server::{SseServer, SseServerConfig};
+    use axum::Router;
 
     // Создаём MCP сервис с поддержкой прокси
     let mut mcp_service = mcp::ProxyMcpService::new(engine.clone());
 
     // Подключаемся к внешним MCP серверам (если есть в конфигурации)
-    let anonymizing_proxy = if !settings.proxy.upstream_servers.is_empty() {
+    let _anonymizing_proxy = if !settings.proxy.upstream_servers.is_empty() {
         info!("🔌 Подключение к {} внешним MCP серверам...", settings.proxy.upstream_servers.len());
-        
+
         let mut connections = Vec::new();
-        
+
         for (name, mut config) in settings.proxy.upstream_servers {
             if !config.enabled {
                 info!("   ⊘ {} отключён, пропускаем", name);
@@ -144,40 +144,39 @@ async fn run_http_server(
             let proxy_manager = mcp::McpProxyManager::new(connections);
             let anonymizing_proxy = mcp::AnonymizingProxy::new(proxy_manager, engine.clone());
             mcp_service.set_proxy(anonymizing_proxy);
+            Some(())
+        } else {
+            None
         }
+    } else {
+        None
     };
 
-    // Запускаем Axum health server на отдельном порту
-    let health_app = axum::Router::new()
+    // Создаём Axum роутеры
+    let health_app = Router::new()
         .route("/api/v1/health", axum::routing::get(|| async { "OK" }));
 
-    let health_addr = format!("{}:{}", settings.server.host, settings.server.port + 1);
-    let listener = tokio::net::TcpListener::bind(&health_addr).await?;
+    // SSE MCP роутер
+    let sse_app = mcp::sse_transport::create_sse_router(mcp_service);
 
-    tokio::spawn(async move {
-        info!("🏥 Health server запущен на {}", health_addr);
-        axum::serve(listener, health_app)
-            .await
-            .expect("Health server failed");
-    });
+    // Объединяем в один роутер
+    let app = Router::new()
+        .merge(sse_app)
+        .nest("/health", health_app);
 
-    // Запускаем rmcp SSE сервер на основном порту
-    let bind_addr = format!("{}:{}", settings.server.host, settings.server.port)
-        .parse::<std::net::SocketAddr>()?;
+    // Запускаем сервер
+    let bind_addr = format!("{}:{}", settings.server.host, settings.server.port);
+    let listener = tokio::net::TcpListener::bind(&bind_addr).await?;
 
-    let sse_config = SseServerConfig {
-        bind: bind_addr,
-        sse_path: "/sse".to_string(),
-        post_path: "/message".to_string(),
-        ct: tokio_util::sync::CancellationToken::new(),
-    };
-
-    let sse_server = SseServer::serve_with_config(sse_config).await?;
     info!("🤖 MCP SSE сервер запущен на {}", bind_addr);
     info!("📡 SSE endpoint: http://{}/sse", bind_addr);
-    info!("📨 Message endpoint: http://{}/message?sessionId=<id>", bind_addr);
+    info!("📨 Message endpoint: http://{}/message", bind_addr);
+    info!("🏥 Health endpoint: http://{}:{}/api/v1/health", settings.server.host, settings.server.port);
 
     info!("MCP сервер готов к подключению клиентов");
+
+    axum::serve(listener, app)
+        .await?;
 
     shutdown_signal().await;
     Ok(())

@@ -2,6 +2,7 @@ pub mod server;
 pub mod client;
 pub mod proxy;
 pub mod proxy_service;
+pub mod sse_transport;
 
 pub use server::AnonymizerService;
 pub use client::{McpProxyManager, McpUpstreamConnection, McpProxyConfig, ExternalMcpConfig};

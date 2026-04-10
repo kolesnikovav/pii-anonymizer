@@ -50,6 +50,7 @@ rmcp = { version = "0.1", features = ["server", "client", "transport-sse-server"
 clap = { version = "4.4", features = ["derive"] }
 schemars = "0.8"
 tokio-util = "0.7.18"
+async-stream = "0.3"
 
 [dev-dependencies]
 tokio-test = "0.4"

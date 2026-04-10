@@ -42,9 +42,9 @@ ENV RUST_LOG=info
 EXPOSE 3000
 EXPOSE 3001
 
-# Health check (на порту 3001)
+# Health check (на том же порту)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
-    CMD curl -f http://localhost:3001/api/v1/health || exit 1
+    CMD curl -f http://localhost:3000/health/api/v1/health || exit 1
 
 # Запуск приложения
 CMD ["pii-anonymizer"]
