@@ -1,6 +1,7 @@
 use config::{Config, ConfigError, Environment, File};
 use serde::Deserialize;
 
+#[allow(dead_code)]
 use crate::mcp::client::McpProxyConfig;
 
 #[derive(Debug, Deserialize, Clone)]
@@ -10,11 +11,13 @@ pub struct Settings {
     pub anonymizer: AnonymizerSettings,
     pub mcp: McpSettings,
     #[serde(default)]
+    #[allow(dead_code)]
     pub proxy: McpProxyConfig,
     pub logging: LoggingSettings,
 }
 
 #[derive(Debug, Deserialize, Clone)]
+#[allow(dead_code)]
 pub struct ServerSettings {
     pub host: String,
     pub port: u16,
@@ -28,6 +31,7 @@ pub struct AnonymizerSettings {
 }
 
 #[derive(Debug, Deserialize, Clone)]
+#[allow(dead_code)]
 pub struct McpSettings {
     pub enabled: bool,
     pub transport: String,
@@ -36,6 +40,7 @@ pub struct McpSettings {
 }
 
 #[derive(Debug, Deserialize, Clone)]
+#[allow(dead_code)]
 pub struct LoggingSettings {
     pub level: String,
     pub format: String,

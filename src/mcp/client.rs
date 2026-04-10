@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::process::Stdio;
 use std::sync::Arc;
-use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
+use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::process::{Child, ChildStdin, ChildStdout, Command};
 use tokio::sync::Mutex;
 use tracing::info;
@@ -149,7 +149,7 @@ struct JsonRpcResponse {
     error: Option<serde_json::Value>,
 }
 
-struct StdioConnection {
+pub(crate) struct StdioConnection {
     _child: Child,
     stdin: Arc<Mutex<ChildStdin>>,
     stdout: Arc<Mutex<BufReader<ChildStdout>>>,
@@ -194,7 +194,7 @@ impl StdioConnection {
 /// HTTP/SSE подключение (SSE endpoint + POST messages)
 // ═══════════════════════════════════════════════════════════════════════════
 
-struct HttpConnection {
+pub(crate) struct HttpConnection {
     base_url: String,
     session_id: Arc<Mutex<Option<String>>>,
     client: reqwest::Client,
@@ -268,7 +268,7 @@ impl HttpConnection {
 /// Универсальное подключение
 // ═══════════════════════════════════════════════════════════════════════════
 
-enum Transport {
+pub(crate) enum Transport {
     Stdio(StdioConnection),
     Http(HttpConnection),
 }
@@ -288,7 +288,7 @@ impl Transport {
 
 pub struct McpUpstreamConnection {
     pub name: String,
-    pub transport: Arc<Mutex<Transport>>,
+    pub(crate) transport: Arc<Mutex<Transport>>,
     pub tools: Vec<ExternalTool>,
 }
 
@@ -364,7 +364,7 @@ impl McpUpstreamConnection {
         }))
     }
 
-    async fn connect_http(name: &str, config: &ExternalMcpConfig) -> Result<Transport, String> {
+    async fn connect_http(_name: &str, config: &ExternalMcpConfig) -> Result<Transport, String> {
         let url = config.url.as_ref()
             .ok_or("URL required for http transport")?;
 

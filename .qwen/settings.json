@@ -44,7 +44,11 @@
       "Bash(docker compose *)",
       "Bash(cp *)",
       "Bash(touch *)",
-      "Bash(echo *)"
+      "Bash(echo *)",
+      "Bash(docker ps *)",
+      "Bash(docker stop *)",
+      "Bash(mkdir *)",
+      "Bash(cargo clean)"
     ]
   },
   "$version": 3

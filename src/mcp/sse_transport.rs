@@ -27,21 +27,21 @@ struct JsonRpcRequest {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct JsonRpcResponse {
-    jsonrpc: String,
-    id: Option<u64>,
+pub(crate) struct JsonRpcResponse {
+    pub jsonrpc: String,
+    pub id: Option<u64>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    result: Option<Value>,
+    pub result: Option<Value>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    error: Option<JsonRpcError>,
+    pub error: Option<JsonRpcError>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct JsonRpcError {
-    code: i64,
-    message: String,
+pub(crate) struct JsonRpcError {
+    pub code: i64,
+    pub message: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    data: Option<Value>,
+    pub data: Option<Value>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -116,7 +116,7 @@ impl SseServerState {
     }
 
     /// Отправить JSON-RPC response клиенту
-    pub async fn send_response(&self, session_id: &str, response: JsonRpcResponse) -> Result<(), String> {
+    pub(crate) async fn send_response(&self, session_id: &str, response: JsonRpcResponse) -> Result<(), String> {
         let data = serde_json::to_string(&response).map_err(|e| format!("Serialize error: {}", e))?;
         self.send_to_client(session_id, &data).await
     }

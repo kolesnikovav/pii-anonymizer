@@ -3,7 +3,13 @@
     "pii-anonymizer": {
       "type": "sse",
       "url": "http://pii-anonymizer:3000/sse",
-      "enabled": true
+      "enabled": true,
+      "anythingllm": {
+        "suppressedTools": [
+          "detect_pii",
+          "batch_anonymize"
+        ]
+      }
     }
   }
 }

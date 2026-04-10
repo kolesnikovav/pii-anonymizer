@@ -1,3 +1,6 @@
+// Suppress warnings for modules that declare items not directly used in main
+#![allow(unused_imports, dead_code)]
+
 use clap::Parser;
 use tokio::signal;
 use tracing::{info, Level};
@@ -115,7 +118,7 @@ async fn run_http_server(
 
         let mut connections = Vec::new();
 
-        for (name, mut config) in settings.proxy.upstream_servers.iter() {
+        for (name, config) in settings.proxy.upstream_servers.iter() {
             if !config.enabled {
                 info!("   ⊘ {} отключён, пропускаем", name);
                 continue;
