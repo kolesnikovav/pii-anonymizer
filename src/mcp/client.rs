@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::process::Stdio;
 use std::sync::Arc;
-use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
 use tokio::process::{Child, ChildStdin, ChildStdout, Command};
 use tokio::sync::Mutex;
 use tracing::info;
@@ -320,6 +320,29 @@ impl McpUpstreamConnection {
         let mut child = cmd.spawn().map_err(|e| format!("Spawn {}: {}", command, e))?;
         let stdin = child.stdin.take().ok_or("No stdin")?;
         let stdout = child.stdout.take().ok_or("No stdout")?;
+        let stderr = child.stderr.take().ok_or("No stderr")?;
+
+        // Drain stderr in background to prevent blocking
+        tokio::spawn(async move {
+            use tokio::io::AsyncReadExt;
+            let mut reader = BufReader::new(stderr);
+            let mut buf = [0u8; 1024];
+            loop {
+                match reader.read(&mut buf).await {
+                    Ok(0) | Err(_) => break,
+                    Ok(n) => {
+                        let msg = String::from_utf8_lossy(&buf[..n]);
+                        for line in msg.lines() {
+                            if line.contains("ERROR") || line.contains("error") {
+                                tracing::error!("   github-mcp stderr: {}", line);
+                            } else {
+                                tracing::debug!("   github-mcp stderr: {}", line);
+                            }
+                        }
+                    }
+                }
+            }
+        });
 
         Ok(Transport::Stdio(StdioConnection {
             _child: child,
@@ -354,18 +377,19 @@ impl McpUpstreamConnection {
             "clientInfo": {"name": "pii-anonymizer", "version": "0.1.0"}
         })).await?;
 
-        // Send initialized notification
+        // Send initialized notification AFTER receiving initialize response
         let notification = serde_json::json!({
             "jsonrpc": "2.0",
             "method": "notifications/initialized"
         });
+        let json = serde_json::to_string(&notification).map_err(|e| format!("Serialize: {}", e))?;
 
         match &*self.transport.lock().await {
             Transport::Stdio(conn) => {
-                let json = serde_json::to_string(&notification).map_err(|e| format!("Serialize: {}", e))?;
                 let mut stdin = conn.stdin.lock().await;
                 stdin.write_all(format!("{}\n", json).as_bytes()).await
                     .map_err(|e| format!("Write: {}", e))?;
+                stdin.flush().await.map_err(|e| format!("Flush: {}", e))?;
             }
             Transport::Http(conn) => {
                 let mut req = conn.client.post(&conn.base_url)
@@ -376,6 +400,7 @@ impl McpUpstreamConnection {
             }
         }
 
+        info!("   ✅ MCP инициализирован, notification отправлен");
         Ok(())
     }
 
