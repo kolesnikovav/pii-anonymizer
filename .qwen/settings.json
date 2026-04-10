@@ -39,7 +39,12 @@
       "Bash(eof)",
       "Bash(kill *)",
       "Bash(docker compose ps)",
-      "Bash(cat *)"
+      "Bash(cat *)",
+      "Bash(docker compose pull *)",
+      "Bash(docker compose *)",
+      "Bash(cp *)",
+      "Bash(touch *)",
+      "Bash(echo *)"
     ]
   },
   "$version": 3

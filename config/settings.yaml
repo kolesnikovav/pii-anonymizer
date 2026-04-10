@@ -36,28 +36,16 @@ mcp:
 #
 # Переменные окружения с пустыми значениями автоматически подставляются
 # из окружения процесса (удобно для secrets в docker-compose).
-#
-#
-# Пример — MCP Server через Docker:
+
+# Пример — любой MCP Server через HTTP:
 #   proxy:
 #     upstream_servers:
 #       my_server:
-#         transport: stdio
-#         command: docker
-#         args: [run, -i, --rm, -e, API_TOKEN, my-org/my-mcp-server]
-#         env:
-#           API_TOKEN: ""  # подставится из окружения процесса
-#         enabled: true
-#
-# Пример — HTTP MCP сервер:
-#   proxy:
-#     upstream_servers:
-#       remote:
 #         transport: http
 #         url: "http://my-mcp-server:8080/sse"
 #         enabled: true
-#
-# Пример: GitHub MCP Server через Docker:
+
+# Пример — GitHub MCP Server через Docker (требует токен):
 #   proxy:
 #     upstream_servers:
 #       github:
@@ -65,18 +53,22 @@ mcp:
 #         command: docker
 #         args: ["run", "-i", "--rm", "-e", "GITHUB_PERSONAL_ACCESS_TOKEN", "ghcr.io/github/github-mcp-server"]
 #         env:
-#           GITHUB_PERSONAL_ACCESS_TOKEN: ""  # подставится из GITHUB_TOKEN
+#           GITHUB_PERSONAL_ACCESS_TOKEN: ""  # подставится из окружения
+#         enabled: true
+
+# Пример — SearXNG MCP Server (веб-поиск, без токенов):
+#   proxy:
+#     upstream_servers:
+#       searxng:
+#         transport: stdio
+#         command: docker
+#         args: ["run", "-i", "--rm", "-e", "SEARXNG_URL", "isokoliuk/mcp-searxng:latest"]
+#         env:
+#           SEARXNG_URL: "http://searxng:8080"
 #         enabled: true
 
 proxy:
-  upstream_servers:
-    github:
-      transport: stdio
-      command: docker
-      args: ["run", "-i", "--rm", "-e", "GITHUB_PERSONAL_ACCESS_TOKEN", "ghcr.io/github/github-mcp-server"]
-      env:
-        GITHUB_PERSONAL_ACCESS_TOKEN: ""  # подставится из GITHUB_TOKEN
-      enabled: true
+  upstream_servers: {}
 
 # Logging
 logging:
