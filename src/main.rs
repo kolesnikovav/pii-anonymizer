@@ -121,11 +121,18 @@ async fn run_http_server(
                 continue;
             }
 
-            // Подставляем GITHUB_TOKEN из окружения если есть
-            if let Some(github_token) = std::env::var("GITHUB_TOKEN").ok().filter(|s| !s.is_empty()) {
-                if config.env.contains_key("GITHUB_PERSONAL_ACCESS_TOKEN") {
-                    config.env.insert("GITHUB_PERSONAL_ACCESS_TOKEN".to_string(), github_token);
-                    info!("   🔑 GITHUB_TOKEN подставлен из окружения");
+            // Подставляем переменные окружения из окружения процесса
+            // Ключи в config.env могут быть в любом регистре (serde нормализует)
+            for (key, value) in &mut config.env {
+                if value.is_empty() {
+                    let key_upper = key.to_uppercase();
+                    for env_key in [key.as_str(), key_upper.as_str()] {
+                        if let Ok(env_val) = std::env::var(env_key) {
+                            *value = env_val;
+                            info!("   🔑 {} '{}' ← ${}", name, key, env_key);
+                            break;
+                        }
+                    }
                 }
             }
 

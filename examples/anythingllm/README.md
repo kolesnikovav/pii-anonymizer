@@ -55,44 +55,39 @@ curl -N http://localhost:3000/sse
 
 > **Примечание**: URL использует Docker DNS имя `pii-anonymizer`, а не `localhost`.
 
-### 5. Подключение GitHub MCP Server (опционально)
+### 5. Подключение upstream MCP серверов (опционально)
 
-GitHub MCP Server работает через **stdio** и требует дополнительный proxy для работы в Docker.
+PII Anonymizer может проксировать любые внешние MCP серверы к AnythingLLM.
+Инструменты всех подключённых серверов автоматически появляются в AnythingLLM.
 
-**Вариант A: Локальный запуск (без Docker)**
+**Пример: GitHub MCP Server через Docker**
 
-```bash
-# Установить токен
-export GITHUB_TOKEN=ghp_your_token
-
-# Запустить PII-Anonymizer локально
-cargo run -- --config config/settings.yaml
-```
-
-В `config/settings.yaml` включите GitHub MCP:
+1. Раскомментируйте секцию `github` в `config/settings.yaml`:
 ```yaml
 proxy:
   upstream_servers:
     github:
+      transport: stdio
+      command: docker
+      args: ["run", "-i", "--rm", "-e", "GITHUB_PERSONAL_ACCESS_TOKEN", "ghcr.io/github/github-mcp-server"]
+      env:
+        GITHUB_PERSONAL_ACCESS_TOKEN: ""  # подставится из GITHUB_TOKEN
       enabled: true
 ```
 
-**Вариант B: Docker с HTTP Proxy**
+2. Укажите `GITHUB_TOKEN` в `.env` файле:
+```
+GITHUB_TOKEN=ghp_your_token_here
+```
 
-Требуется MCP-to-HTTP proxy (например, `mcpgateway`):
+**Пример: любой другой MCP Server через HTTP**
 
-```bash
-# Запустить GitHub MCP с HTTP endpoint
-docker run -i --rm -p 8080:8080 \
-  -e GITHUB_PERSONAL_ACCESS_TOKEN=$GITHUB_TOKEN \
-  ghcr.io/github/github-mcp-server
-
-# В settings.yaml указать HTTP transport:
+```yaml
 proxy:
   upstream_servers:
-    github:
+    my_server:
       transport: http
-      url: http://github-mcp:8080
+      url: "http://my-mcp-server:8080/sse"
       enabled: true
 ```
 

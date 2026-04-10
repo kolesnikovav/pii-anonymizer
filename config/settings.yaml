@@ -29,30 +29,54 @@ mcp:
   server_version: "0.1.0"
 
 # Proxy configuration — upstream MCP servers
-# 
+#
 # Подключение к внешним MCP серверам. Поддерживаемые транспорты:
-#   - stdio: запуск subprocess (локально)
+#   - stdio: запуск subprocess (docker, локальная команда и т.д.)
 #   - http: подключение к HTTP/SSE endpoint
 #
-# Пример с GitHub MCP Server (локальный запуск):
+# Переменные окружения с пустыми значениями автоматически подставляются
+# из окружения процесса (удобно для secrets в docker-compose).
+#
+#
+# Пример — MCP Server через Docker:
+#   proxy:
+#     upstream_servers:
+#       my_server:
+#         transport: stdio
+#         command: docker
+#         args: [run, -i, --rm, -e, API_TOKEN, my-org/my-mcp-server]
+#         env:
+#           API_TOKEN: ""  # подставится из окружения процесса
+#         enabled: true
+#
+# Пример — HTTP MCP сервер:
+#   proxy:
+#     upstream_servers:
+#       remote:
+#         transport: http
+#         url: "http://my-mcp-server:8080/sse"
+#         enabled: true
+#
+# Пример: GitHub MCP Server через Docker:
 #   proxy:
 #     upstream_servers:
 #       github:
 #         transport: stdio
 #         command: docker
-#         args: [run, -i, --rm, -e, GITHUB_PERSONAL_ACCESS_TOKEN, ghcr.io/github/github-mcp-server]
+#         args: ["run", "-i", "--rm", "-e", "GITHUB_PERSONAL_ACCESS_TOKEN", "ghcr.io/github/github-mcp-server"]
 #         env:
-#           GITHUB_PERSONAL_ACCESS_TOKEN: "ваш_токен"
-#         enabled: true
-#
-# Пример с HTTP MCP сервером:
-#       remote:
-#         transport: http
-#         url: "http://localhost:8080/sse"
+#           GITHUB_PERSONAL_ACCESS_TOKEN: ""  # подставится из GITHUB_TOKEN
 #         enabled: true
 
 proxy:
-  upstream_servers: {}
+  upstream_servers:
+    github:
+      transport: stdio
+      command: docker
+      args: ["run", "-i", "--rm", "-e", "GITHUB_PERSONAL_ACCESS_TOKEN", "ghcr.io/github/github-mcp-server"]
+      env:
+        GITHUB_PERSONAL_ACCESS_TOKEN: ""  # подставится из GITHUB_TOKEN
+      enabled: true
 
 # Logging
 logging:

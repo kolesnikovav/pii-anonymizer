@@ -9,6 +9,7 @@ pub struct Settings {
     #[serde(flatten)]
     pub anonymizer: AnonymizerSettings,
     pub mcp: McpSettings,
+    #[serde(default)]
     pub proxy: McpProxyConfig,
     pub logging: LoggingSettings,
 }

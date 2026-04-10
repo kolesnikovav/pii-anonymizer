@@ -25,7 +25,21 @@
       "Bash(git checkout *)",
       "Bash(docker pull *)",
       "Bash(docker rm *)",
-      "Bash(git rm *)"
+      "Bash(git rm *)",
+      "Bash(docker compose down)",
+      "Bash(docker compose up *)",
+      "Bash(docker logs *)",
+      "Bash(docker exec *)",
+      "Bash(docker run *)",
+      "Bash(wait)",
+      "Bash(timeout *)",
+      "Bash(docker inspect *)",
+      "Bash(docker context *)",
+      "Bash(true)",
+      "Bash(eof)",
+      "Bash(kill *)",
+      "Bash(docker compose ps)",
+      "Bash(cat *)"
     ]
   },
   "$version": 3

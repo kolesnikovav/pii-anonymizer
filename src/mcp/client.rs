@@ -323,26 +323,27 @@ impl McpUpstreamConnection {
         let stderr = child.stderr.take().ok_or("No stderr")?;
 
         // Drain stderr in background to prevent blocking
+        let stderr_name = name.to_string();
         tokio::spawn(async move {
             use tokio::io::AsyncReadExt;
             let mut reader = BufReader::new(stderr);
-            let mut buf = [0u8; 1024];
+            let mut buf = [0u8; 4096];
             loop {
                 match reader.read(&mut buf).await {
                     Ok(0) | Err(_) => break,
                     Ok(n) => {
                         let msg = String::from_utf8_lossy(&buf[..n]);
                         for line in msg.lines() {
-                            if line.contains("ERROR") || line.contains("error") {
-                                tracing::error!("   github-mcp stderr: {}", line);
-                            } else {
-                                tracing::debug!("   github-mcp stderr: {}", line);
-                            }
+                            tracing::info!("   [{} stderr] {}", stderr_name, line);
                         }
                     }
                 }
             }
         });
+
+        // Give the subprocess time to initialize before sending requests
+        // Some MCP servers (especially Docker-based) need a few seconds to start
+        tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
 
         Ok(Transport::Stdio(StdioConnection {
             _child: child,

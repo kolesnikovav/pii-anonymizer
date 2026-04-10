@@ -10,10 +10,12 @@ services:
       - "3000:3000"
     volumes:
       - ../../config:/app/config:ro
-      # На Linux: добавьте - /var/run/docker.sock:/var/run/docker.sock для GitHub MCP
+      - /run/user/1000/docker.sock:/var/run/docker.sock
+    user: root
     environment:
       - ANONYMIZER__DEFAULT_STRATEGY=mask
       - RUST_LOG=info
+      - GITHUB_PERSONAL_ACCESS_TOKEN=${GITHUB_PERSONAL_ACCESS_TOKEN:-}
     networks:
       - mcp-network
     healthcheck:
@@ -34,6 +36,7 @@ services:
       - SYS_ADMIN
     volumes:
       - anythingllm-storage:/app/server/storage
+      - ./mcp_servers.json:/app/server/storage/plugins/anythingllm_mcp_servers.json
     environment:
       - STORAGE_DIR=/app/server/storage
       - JWT_SECRET=change-me-to-random-string
