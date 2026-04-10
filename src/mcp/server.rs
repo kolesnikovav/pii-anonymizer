@@ -12,8 +12,6 @@ pub struct AnonymizerService {
     engine: AnonymizerEngine,
 }
 
-// ── Request модели для инструментов ───────────────────────────────────────
-
 #[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct AnonymizeReq {
     pub text: String,
@@ -30,8 +28,6 @@ pub struct BatchAnonymizeReq {
     pub texts: Vec<String>,
     pub strategy: Option<String>,
 }
-
-// ── Реализация инструментов через макросы rmcp ────────────────────────────
 
 impl AnonymizerService {
     pub fn new(engine: AnonymizerEngine) -> Self {
@@ -96,11 +92,7 @@ impl AnonymizerService {
     }
 }
 
-// ── tool_box макрос генерирует call_tool и list_tools ─────────────────────
-
 rmcp::tool_box!(AnonymizerService { anonymize, detect_pii, batch_anonymize });
-
-// ── ServerHandler реализация ──────────────────────────────────────────────
 
 impl ServerHandler for AnonymizerService {
     fn get_info(&self) -> ServerInfo {

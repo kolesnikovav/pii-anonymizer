@@ -28,13 +28,31 @@ mcp:
   server_name: "PII Anonymizer"
   server_version: "0.1.0"
 
-# Proxy configuration
+# Proxy configuration — upstream MCP servers
 proxy:
-  enabled: false
-  upstream_servers: []
-    # - name: "external-ai"
-    #   url: "http://localhost:8080/mcp"
-    #   timeout: 30
+  upstream_servers: {}
+    # Пример: GitHub MCP Server
+    # github:
+    #   command: docker
+    #   args:
+    #     - run
+    #     - -i
+    #     - --rm
+    #     - -e
+    #     - GITHUB_PERSONAL_ACCESS_TOKEN=${GITHUB_TOKEN}
+    #     - ghcr.io/github/github-mcp-server
+    #   env:
+    #     GITHUB_PERSONAL_ACCESS_TOKEN: ""
+    #   enabled: true
+
+    # Пример: другой MCP сервер
+    # filesystem:
+    #   command: npx
+    #   args:
+    #     - -y
+    #     - @modelcontextprotocol/server-filesystem
+    #     - /workspace
+    #   enabled: false
 
 # Logging
 logging:

@@ -1,13 +1,15 @@
 use config::{Config, ConfigError, Environment, File};
 use serde::Deserialize;
 
+use crate::mcp::client::McpProxyConfig;
+
 #[derive(Debug, Deserialize, Clone)]
 pub struct Settings {
     pub server: ServerSettings,
     #[serde(flatten)]
     pub anonymizer: AnonymizerSettings,
     pub mcp: McpSettings,
-    pub proxy: ProxySettings,
+    pub proxy: McpProxyConfig,
     pub logging: LoggingSettings,
 }
 
@@ -30,19 +32,6 @@ pub struct McpSettings {
     pub transport: String,
     pub server_name: String,
     pub server_version: String,
-}
-
-#[derive(Debug, Deserialize, Clone)]
-pub struct UpstreamServer {
-    pub name: String,
-    pub url: String,
-    pub timeout: u64,
-}
-
-#[derive(Debug, Deserialize, Clone)]
-pub struct ProxySettings {
-    pub enabled: bool,
-    pub upstream_servers: Vec<UpstreamServer>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
