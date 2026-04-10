@@ -40,23 +40,54 @@ curl -N http://localhost:3000/sse
 
 ### 4. Настройка MCP сервера в AnythingLLM
 
-**Автоматическая загрузка из файла:**
+**⚠️ ВАЖНО:** MCP серверы в AnythingLLM требуют первоначальной активации через веб-интерфейс.
 
-Файл `mcp_servers.json` уже смонтирован в хранилище AnythingLLM. После первого запуска сервер должен появиться автоматически.
-
-**Ручная настройка (если авто не сработала):**
+#### Шаг 1: Активация MCP в UI
 
 1. Откройте http://localhost:3001
-2. Пройдите первоначальную настройку
-3. Перейдите в **Settings → MCP Servers**
-4. Нажмите **Add new MCP server**
-5. Заполните:
-   - **Name**: `pii-anonymizer`
-   - **Type**: `sse`
-   - **URL**: `http://pii-anonymizer:3000/sse`
-6. Сохраните — сервер должен стать зелёным (активным)
+2. Войдите в систему (или создайте аккаунт при первом запуске)
+3. Перейдите в **Settings** (нажмите на шестерёнку в нижнем левом углу)
+4. В левом меню найдите и нажмите **MCP Servers**
+5. Если увидите переключатель "Enable MCP" — включите его
+6. Нажмите **Save**
 
-> **Примечание**: URL использует Docker DNS имя `pii-anonymizer`, а не `localhost`.
+#### Шаг 2: Добавление PII-Anonymizer
+
+После активации MCP:
+
+1. В том же разделе **MCP Servers** нажмите **Add new MCP server**
+2. Заполните форму:
+   - **Name**: `PII Anonymizer`
+   - **Transport Type**: `SSE`
+   - **URL**: `http://pii-anonymizer:3000/sse`
+3. Нажмите **Save**
+4. Сервер должен стать зелёным (статус: Connected)
+
+#### Альтернатива: Через файл конфигурации
+
+Если MCP уже активирован, можно отредактировать файл:
+
+```bash
+# Остановить AnythingLLM
+docker stop anythingllm
+
+# Отредактировать файл в volume
+docker run --rm -v anythingllm_anythingllm-storage:/data -it alpine vi /data/plugins/anythingllm_mcp_servers.json
+
+# Добавить содержимое:
+{
+  "mcpServers": {
+    "pii-anonymizer": {
+      "transport": "sse",
+      "url": "http://pii-anonymizer:3000/sse",
+      "enabled": true
+    }
+  }
+}
+
+# Перезапустить
+docker start anythingllm
+```
 
 ## Конфигурация
 
