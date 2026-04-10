@@ -21,3 +21,6 @@ Thumbs.db
 # Logs
 logs/
 *.log
+
+# Documentation (temporary)
+*.pdf

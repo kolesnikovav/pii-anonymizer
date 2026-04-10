@@ -2,6 +2,17 @@
 
 Интеграция PII Anonymizer с AnythingLLM через Docker Compose.
 
+## Архитектура
+
+```
+┌─────────────────┐         ┌──────────────────────┐
+│   AnythingLLM   │────────▶│  PII Anonymizer MCP  │
+│   (port 3001)   │  SSE    │  (port 3000)         │
+└─────────────────┘         └──────────────────────┘
+        │
+        └─ mcp_servers.json (volume mount)
+```
+
 ## Быстрый старт
 
 ### 1. Запуск
@@ -28,6 +39,12 @@ curl -N http://localhost:3000/sse
 ```
 
 ### 4. Настройка MCP сервера в AnythingLLM
+
+**Автоматическая загрузка из файла:**
+
+Файл `mcp_servers.json` уже смонтирован в хранилище AnythingLLM. После первого запуска сервер должен появиться автоматически.
+
+**Ручная настройка (если авто не сработала):**
 
 1. Откройте http://localhost:3001
 2. Пройдите первоначальную настройку
@@ -66,8 +83,62 @@ volumes:
 | `detect_pii` | Обнаружить PII | `text` |
 | `batch_anonymize` | Пакетная обработка | `texts`, `strategy?` |
 
+## Структура mcp_servers.json
+
+```json
+{
+  "mcpServers": {
+    "pii-anonymizer": {
+      "type": "sse",
+      "url": "http://pii-anonymizer:3000/sse"
+    }
+  }
+}
+```
+
+Файл монтируется как volume в `/app/server/storage/mcp_servers.json` внутри контейнера AnythingLLM.
+
+## Troubleshooting
+
+### MCP сервер не подключается
+
+1. Проверьте логи PII Anonymizer:
+   ```bash
+   docker logs pii-anonymizer
+   ```
+
+2. Убедитесь, что SSE endpoint работает:
+   ```bash
+   curl -N http://localhost:3000/sse
+   ```
+   Должен вернуться `event: endpoint` с URL.
+
+3. Проверьте сеть Docker:
+   ```bash
+   docker network inspect anythingllm_mcp-network
+   ```
+
+### AnythingLLM не видит mcp_servers.json
+
+1. Проверьте, что файл смонтирован:
+   ```bash
+   docker exec anythingllm cat /app/server/storage/mcp_servers.json
+   ```
+
+2. Перезапустите AnythingLLM:
+   ```bash
+   docker-compose restart anythingllm
+   ```
+
 ## Остановка
 
 ```bash
 docker-compose down
+```
+
+## Полный сброс
+
+```bash
+docker-compose down -v
+docker volume rm anythingllm_anythingllm-storage
 ```

@@ -21,7 +21,8 @@
       "WebFetch(docs.anythingllm.com)",
       "Bash(cargo run *)",
       "Bash(sleep *)",
-      "Bash(curl *)"
+      "Bash(curl *)",
+      "Bash(git checkout *)"
     ]
   },
   "$version": 3

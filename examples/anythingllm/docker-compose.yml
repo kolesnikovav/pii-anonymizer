@@ -33,6 +33,7 @@ services:
       - SYS_ADMIN
     volumes:
       - anythingllm-storage:/app/server/storage
+      - ./mcp_servers.json:/app/server/storage/mcp_servers.json:ro
     environment:
       - STORAGE_DIR=/app/server/storage
       - JWT_SECRET=change-me-to-random-string
