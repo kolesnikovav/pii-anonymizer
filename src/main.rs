@@ -115,13 +115,21 @@ async fn run_http_server(
         
         let mut connections = Vec::new();
         
-        for (name, config) in &settings.proxy.upstream_servers {
+        for (name, mut config) in settings.proxy.upstream_servers {
             if !config.enabled {
                 info!("   ⊘ {} отключён, пропускаем", name);
                 continue;
             }
 
-            match mcp::McpUpstreamConnection::connect(name.clone(), config).await {
+            // Подставляем GITHUB_TOKEN из окружения если есть
+            if let Some(github_token) = std::env::var("GITHUB_TOKEN").ok().filter(|s| !s.is_empty()) {
+                if config.env.contains_key("GITHUB_PERSONAL_ACCESS_TOKEN") {
+                    config.env.insert("GITHUB_PERSONAL_ACCESS_TOKEN".to_string(), github_token);
+                    info!("   🔑 GITHUB_TOKEN подставлен из окружения");
+                }
+            }
+
+            match mcp::McpUpstreamConnection::connect(name.clone(), &config).await {
                 Ok(conn) => {
                     info!("   ✅ {} подключён ({} инструментов)", name, conn.tools.len());
                     connections.push(conn);
