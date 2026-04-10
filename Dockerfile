@@ -1,33 +1,49 @@
 # Multi-stage build
-FROM rust:1.75-slim-bookworm AS builder
+FROM rust:1.83-slim-bookworm AS builder
 
 WORKDIR /app
 
-# Копирование файлов манифеста для кеширования
+# Install build dependencies for curl in healthcheck
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Копирование файлов манифеста для кеширования зависимостей
 COPY Cargo.toml Cargo.lock ./
-RUN mkdir src && echo "fn main() {}" > src/main.rs
-RUN cargo build --release --locked || true
+RUN mkdir src && echo "fn main() {}" > src/main.rs && echo "pub fn dummy() {}" > src/lib.rs
+RUN cargo build --release --locked 2>/dev/null || true
+RUN rm -f target/release/deps/pii_anonymizer*
 
-# Копирование исходного кода
-COPY . .
+# Копирование исходного кода (только src и config)
+COPY src/ ./src/
+COPY config/ ./config/
+
+# Финальная сборка
 RUN cargo build --release --locked
+RUN strip /app/target/release/pii-anonymizer
 
-# Финальный образ
+# Финальный образ (минимальный)
 FROM debian:bookworm-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
+    curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /var/cache/apt/*
 
 WORKDIR /app
 
-# Копирование бинарника
+# Копирование только бинарника и конфига
 COPY --from=builder /app/target/release/pii-anonymizer /usr/local/bin/
 COPY --from=builder /app/config/settings.yaml /app/config/
 
 # Настройка окружения
 ENV RUST_LOG=info
 EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:3000/api/v1/health || exit 1
 
 # Запуск приложения
 CMD ["pii-anonymizer"]

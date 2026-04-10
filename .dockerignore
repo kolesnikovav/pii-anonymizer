@@ -1,0 +1,40 @@
+# Build artifacts
+/target/
+**/*.rs.bk
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Documentation (temporary)
+*.pdf
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Examples
+examples/
+
+# Tests
+tests/
+
+# Logs
+logs/
+*.log
