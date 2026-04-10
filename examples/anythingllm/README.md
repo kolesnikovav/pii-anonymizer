@@ -55,13 +55,58 @@ curl -N http://localhost:3000/sse
 
 > **Примечание**: URL использует Docker DNS имя `pii-anonymizer`, а не `localhost`.
 
-### 5. Проверка работы
+### 5. Подключение GitHub MCP Server (опционально)
+
+GitHub MCP Server работает через **stdio** и требует дополнительный proxy для работы в Docker.
+
+**Вариант A: Локальный запуск (без Docker)**
+
+```bash
+# Установить токен
+export GITHUB_TOKEN=ghp_your_token
+
+# Запустить PII-Anonymizer локально
+cargo run -- --config config/settings.yaml
+```
+
+В `config/settings.yaml` включите GitHub MCP:
+```yaml
+proxy:
+  upstream_servers:
+    github:
+      enabled: true
+```
+
+**Вариант B: Docker с HTTP Proxy**
+
+Требуется MCP-to-HTTP proxy (например, `mcpgateway`):
+
+```bash
+# Запустить GitHub MCP с HTTP endpoint
+docker run -i --rm -p 8080:8080 \
+  -e GITHUB_PERSONAL_ACCESS_TOKEN=$GITHUB_TOKEN \
+  ghcr.io/github/github-mcp-server
+
+# В settings.yaml указать HTTP transport:
+proxy:
+  upstream_servers:
+    github:
+      transport: http
+      url: http://github-mcp:8080
+      enabled: true
+```
+
+### 6. Проверка работы
 
 После подключения MCP сервера:
 
 1. Перейдите в **Agents** → выберите агент
-2. В разделе MCP инструментов должен появиться `anonymize`, `detect_pii`, `batch_anonymize`
-3. Попробуйте запрос к агенту с текстом содержащим PII (email, телефон и т.д.)
+2. В разделе MCP инструментов должны появиться:
+   - `anonymize` — анонимизация текста
+   - `detect_pii` — обнаружение PII
+   - `batch_anonymize` — пакетная обработка
+   - `github_*` — инструменты GitHub (если подключён)
+3. Попробуйте запрос к агенту с текстом содержащим PII
 
 ## Конфигурация
 
