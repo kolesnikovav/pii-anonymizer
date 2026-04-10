@@ -1,12 +1,11 @@
 # Multi-stage build
-FROM rust:latest AS builder
-# Rust 1.85+ required for edition2024 (clap_derive 4.6)
+FROM rust:1.86-slim-bookworm AS builder
 
 WORKDIR /app
 
-# Install build dependencies for curl in healthcheck
+# Install build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl \
+    curl pkg-config libssl-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Копирование файлов манифеста для кеширования зависимостей
