@@ -40,54 +40,28 @@ curl -N http://localhost:3000/sse
 
 ### 4. Настройка MCP сервера в AnythingLLM
 
-**⚠️ ВАЖНО:** MCP серверы в AnythingLLM требуют первоначальной активации через веб-интерфейс.
-
-#### Шаг 1: Активация MCP в UI
+**⚠️ Важно:** MCP серверы в AnythingLLM настраиваются через веб-интерфейс.
 
 1. Откройте http://localhost:3001
 2. Войдите в систему (или создайте аккаунт при первом запуске)
-3. Перейдите в **Settings** (нажмите на шестерёнку в нижнем левом углу)
-4. В левом меню найдите и нажмите **MCP Servers**
-5. Если увидите переключатель "Enable MCP" — включите его
-6. Нажмите **Save**
-
-#### Шаг 2: Добавление PII-Anonymizer
-
-После активации MCP:
-
-1. В том же разделе **MCP Servers** нажмите **Add new MCP server**
-2. Заполните форму:
+3. Перейдите в **Settings** (шестерёнка в нижнем левом углу)
+4. Найдите раздел **MCP Servers** в меню слева
+5. Нажмите **Add new MCP server**
+6. Заполните:
    - **Name**: `PII Anonymizer`
-   - **Transport Type**: `SSE`
+   - **Type**: `SSE`
    - **URL**: `http://pii-anonymizer:3000/sse`
-3. Нажмите **Save**
-4. Сервер должен стать зелёным (статус: Connected)
+7. Нажмите **Save** — сервер должен стать зелёным (Connected)
 
-#### Альтернатива: Через файл конфигурации
+> **Примечание**: URL использует Docker DNS имя `pii-anonymizer`, а не `localhost`.
 
-Если MCP уже активирован, можно отредактировать файл:
+### 5. Проверка работы
 
-```bash
-# Остановить AnythingLLM
-docker stop anythingllm
+После подключения MCP сервера:
 
-# Отредактировать файл в volume
-docker run --rm -v anythingllm_anythingllm-storage:/data -it alpine vi /data/plugins/anythingllm_mcp_servers.json
-
-# Добавить содержимое:
-{
-  "mcpServers": {
-    "pii-anonymizer": {
-      "transport": "sse",
-      "url": "http://pii-anonymizer:3000/sse",
-      "enabled": true
-    }
-  }
-}
-
-# Перезапустить
-docker start anythingllm
-```
+1. Перейдите в **Agents** → выберите агент
+2. В разделе MCP инструментов должен появиться `anonymize`, `detect_pii`, `batch_anonymize`
+3. Попробуйте запрос к агенту с текстом содержащим PII (email, телефон и т.д.)
 
 ## Конфигурация
 

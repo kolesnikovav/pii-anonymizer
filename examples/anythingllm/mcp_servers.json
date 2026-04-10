@@ -1,7 +1,7 @@
 {
   "mcpServers": {
     "pii-anonymizer": {
-      "transport": "sse",
+      "type": "sse",
       "url": "http://pii-anonymizer:3000/sse",
       "enabled": true
     }
