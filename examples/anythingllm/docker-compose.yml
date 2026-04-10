@@ -1,19 +1,4 @@
 services:
-  # GitHub MCP HTTP Proxy — оборачивает stdio GitHub MCP в HTTP endpoint
-  github-mcp-proxy:
-    build: ./github-mcp-proxy
-    container_name: github-mcp-proxy
-    restart: unless-stopped
-    ports:
-      - "3010:3001"
-    environment:
-      - GITHUB_PERSONAL_ACCESS_TOKEN=${GITHUB_TOKEN}
-      - GITHUB_TOOLSETS=all
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock  # Для запуска GitHub MCP контейнера
-    networks:
-      - mcp-network
-
   # PII Anonymizer MCP Server
   pii-anonymizer:
     build:
@@ -28,8 +13,6 @@ services:
     environment:
       - ANONYMIZER__DEFAULT_STRATEGY=mask
       - RUST_LOG=info
-    depends_on:
-      - github-mcp-proxy
     networks:
       - mcp-network
     healthcheck:
@@ -37,7 +20,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
-      start_period: 15s
+      start_period: 10s
 
   # AnythingLLM
   anythingllm:

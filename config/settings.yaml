@@ -29,13 +29,30 @@ mcp:
   server_version: "0.1.0"
 
 # Proxy configuration — upstream MCP servers
+# 
+# Подключение к внешним MCP серверам. Поддерживаемые транспорты:
+#   - stdio: запуск subprocess (локально)
+#   - http: подключение к HTTP/SSE endpoint
+#
+# Пример с GitHub MCP Server (локальный запуск):
+#   proxy:
+#     upstream_servers:
+#       github:
+#         transport: stdio
+#         command: docker
+#         args: [run, -i, --rm, -e, GITHUB_PERSONAL_ACCESS_TOKEN, ghcr.io/github/github-mcp-server]
+#         env:
+#           GITHUB_PERSONAL_ACCESS_TOKEN: "ваш_токен"
+#         enabled: true
+#
+# Пример с HTTP MCP сервером:
+#       remote:
+#         transport: http
+#         url: "http://localhost:8080/sse"
+#         enabled: true
+
 proxy:
-  upstream_servers:
-    # GitHub MCP Server — подключается через HTTP proxy
-    github:
-      transport: http
-      url: "http://github-mcp-proxy:3001"
-      enabled: true  # Включено для проксирования через PII-Anonymizer
+  upstream_servers: {}
 
 # Logging
 logging:
