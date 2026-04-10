@@ -2,13 +2,13 @@
 
 Сервис для анонимизации текста с удалением персональных данных (PII). HTTP REST API, MCP сервер, проксирование к внешним MCP серверам.
 
-## 🚀 Возможности
+## Возможности
 
-- 🔍 **12 паттернов PII**: email, телефоны, паспорта, СНИЛС, ИНН, кредитные карты, API ключи, JWT, SSH ключи, IP, домены
-- 🎭 **3 стратегии**: replace, mask, hash
-- 🌐 REST API + MCP Server + SSE transport
-- 🔄 **MCP Proxy** — проксирование к любым внешним MCP серверам с выборочной анонимизацией
-- 🐳 Docker готовность
+- **12 паттернов PII**: email, телефоны, паспорта, СНИЛС, ИНН, кредитные карты, API ключи, JWT, SSH ключи, IP, домены
+- **3 стратегии**: replace, mask, hash
+- REST API + MCP Server + SSE transport
+- **MCP Proxy** — проксирование к любым внешним MCP серверам с выборочной анонимизацией
+- Docker готовность
 
 ## Быстрый старт
 
@@ -18,7 +18,7 @@ cargo run -- --mcp-mode stdio          # MCP stdio режим
 docker compose up -d                   # Docker
 ```
 
-## 📚 Документация
+## Документация
 
 | Раздел | Описание |
 |--------|----------|
@@ -29,17 +29,17 @@ docker compose up -d                   # Docker
 | [Интеграции](docs/integrations.md) | AnythingLLM, GitHub MCP, SearXNG, VS Code, Claude |
 | [Стратегии](docs/strategies.md) | Replace, mask, hash — примеры и сравнение |
 | [PII паттерны](docs/patterns.md) | Полный список поддерживаемых PII |
-| [Развёртывание](docs/deployment.md) | Docker,环境变量, docker socket |
+| [Развёртывание](docs/deployment.md) | Docker, переменные окружения, docker socket |
 | [Сравнение](COMPARISON.md) | Presidio, Scrubadub и другие |
 
-## 🧪 Тестирование
+## Тестирование
 
 ```bash
 cargo test
 ```
 
-**Статус**: ✅ 80+ тестов
+**Статус**: 80+ тестов проходят успешно
 
-## 📝 Лицензия
+## Лицензия
 
 MIT
