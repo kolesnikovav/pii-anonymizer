@@ -106,8 +106,8 @@ async fn run_http_server(
 ) -> Result<(), Box<dyn std::error::Error>> {
     use rmcp::transport::sse_server::{SseServer, SseServerConfig};
 
-    // Создаём MCP сервис
-    let mcp_service = mcp::server::AnonymizerService::new(engine.clone());
+    // Создаём MCP сервис с поддержкой прокси
+    let mut mcp_service = mcp::ProxyMcpService::new(engine.clone());
 
     // Подключаемся к внешним MCP серверам (если есть в конфигурации)
     let anonymizing_proxy = if !settings.proxy.upstream_servers.is_empty() {
@@ -134,12 +134,9 @@ async fn run_http_server(
 
         if !connections.is_empty() {
             let proxy_manager = mcp::McpProxyManager::new(connections);
-            Some(mcp::AnonymizingProxy::new(proxy_manager, engine.clone()))
-        } else {
-            None
+            let anonymizing_proxy = mcp::AnonymizingProxy::new(proxy_manager, engine.clone());
+            mcp_service.set_proxy(anonymizing_proxy);
         }
-    } else {
-        None
     };
 
     // Запускаем Axum health server на отдельном порту
@@ -173,9 +170,6 @@ async fn run_http_server(
     info!("📨 Message endpoint: http://{}/message?sessionId=<id>", bind_addr);
 
     info!("MCP сервер готов к подключению клиентов");
-    if let Some(proxy) = &anonymizing_proxy {
-        info!("🌐 Прокси активен с {} инструментами", proxy.proxy.get_tools().len());
-    }
 
     shutdown_signal().await;
     Ok(())
