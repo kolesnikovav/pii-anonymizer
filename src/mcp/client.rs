@@ -50,6 +50,14 @@ pub struct ExternalMcpConfig {
     /// Включён ли сервер
     #[serde(default = "default_enabled")]
     pub enabled: bool,
+
+    // ── Анонимизация ──
+    /// Какие поля каких инструментов анонимизировать.
+    /// Формат: { "tool_name": ["field1", "field2"] }
+    /// Если не указано — анонимизируются все строковые значения (обратная совместимость).
+    /// Если указано пустой список `[]` — анонимизация отключена для этого сервера.
+    #[serde(default)]
+    pub anonymize_fields: HashMap<String, Vec<String>>,
 }
 
 fn default_enabled() -> bool { true }
@@ -64,6 +72,7 @@ impl ExternalMcpConfig {
             url: None,
             headers: HashMap::new(),
             enabled: true,
+            anonymize_fields: HashMap::new(),
         }
     }
 
@@ -76,6 +85,7 @@ impl ExternalMcpConfig {
             url: Some(url),
             headers: HashMap::new(),
             enabled: true,
+            anonymize_fields: HashMap::new(),
         }
     }
 
@@ -90,6 +100,7 @@ impl ExternalMcpConfig {
             url: Some(url),
             headers,
             enabled: true,
+            anonymize_fields: HashMap::new(),
         }
     }
 }

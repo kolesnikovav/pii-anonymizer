@@ -115,7 +115,7 @@ async fn run_http_server(
 
         let mut connections = Vec::new();
 
-        for (name, mut config) in settings.proxy.upstream_servers {
+        for (name, mut config) in settings.proxy.upstream_servers.iter() {
             if !config.enabled {
                 info!("   ⊘ {} отключён, пропускаем", name);
                 continue;
@@ -123,7 +123,8 @@ async fn run_http_server(
 
             // Подставляем переменные окружения из окружения процесса
             // Ключи в config.env могут быть в любом регистре (serde нормализует)
-            for (key, value) in &mut config.env {
+            let mut config_clone = (*config).clone();
+            for (key, value) in &mut config_clone.env {
                 if value.is_empty() {
                     let key_upper = key.to_uppercase();
                     for env_key in [key.as_str(), key_upper.as_str()] {
@@ -136,7 +137,7 @@ async fn run_http_server(
                 }
             }
 
-            match mcp::McpUpstreamConnection::connect(name.clone(), &config).await {
+            match mcp::McpUpstreamConnection::connect(name.clone(), &config_clone).await {
                 Ok(conn) => {
                     info!("   ✅ {} подключён ({} инструментов)", name, conn.tools.len());
                     connections.push(conn);
@@ -149,7 +150,18 @@ async fn run_http_server(
 
         if !connections.is_empty() {
             let proxy_manager = mcp::McpProxyManager::new(connections);
-            let anonymizing_proxy = mcp::AnonymizingProxy::new(proxy_manager, engine.clone());
+            let mut anonymizing_proxy = mcp::AnonymizingProxy::new(proxy_manager, engine.clone());
+
+            // Устанавливаем правила анонимизации для каждого сервера
+            for (name, config) in &settings.proxy.upstream_servers {
+                if !config.anonymize_fields.is_empty() {
+                    let rules = mcp::ServerAnonymizationRules {
+                        tool_fields: config.anonymize_fields.clone(),
+                    };
+                    anonymizing_proxy.set_rules(name.clone(), rules);
+                }
+            }
+
             mcp_service.set_proxy(anonymizing_proxy);
         }
     }
