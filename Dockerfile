@@ -26,10 +26,8 @@ RUN strip /app/target/release/pii-anonymizer
 FROM debian:bookworm-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates \
-    curl \
-    && rm -rf /var/lib/apt/lists/* \
-    && rm -rf /var/cache/apt/*
+    ca-certificates curl docker.io \
+    && rm -rf /var/lib/apt/lists/* /var/cache/apt/*
 
 WORKDIR /app
 

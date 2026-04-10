@@ -110,7 +110,7 @@ async fn run_http_server(
     let mut mcp_service = mcp::ProxyMcpService::new(engine.clone());
 
     // Подключаемся к внешним MCP серверам (если есть в конфигурации)
-    let _anonymizing_proxy = if !settings.proxy.upstream_servers.is_empty() {
+    if !settings.proxy.upstream_servers.is_empty() {
         info!("🔌 Подключение к {} внешним MCP серверам...", settings.proxy.upstream_servers.len());
 
         let mut connections = Vec::new();
@@ -144,20 +144,18 @@ async fn run_http_server(
             let proxy_manager = mcp::McpProxyManager::new(connections);
             let anonymizing_proxy = mcp::AnonymizingProxy::new(proxy_manager, engine.clone());
             mcp_service.set_proxy(anonymizing_proxy);
-            Some(())
-        } else {
-            None
         }
-    } else {
-        None
-    };
+    }
+
+    // Оборачиваем в Arc чтобы не клонировать
+    let mcp_service = std::sync::Arc::new(mcp_service);
 
     // Создаём Axum роутеры
     let health_app = Router::new()
         .route("/api/v1/health", axum::routing::get(|| async { "OK" }));
 
-    // SSE MCP роутер
-    let sse_app = mcp::sse_transport::create_sse_router(mcp_service);
+    // SSE MCP роутер — передаём Arc
+    let sse_app = mcp::sse_transport::create_sse_router_arc(mcp_service);
 
     // Объединяем в один роутер
     let app = Router::new()

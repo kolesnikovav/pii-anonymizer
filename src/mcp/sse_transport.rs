@@ -9,7 +9,6 @@ use serde_json::{json, Value, Map};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::{mpsc, RwLock};
-use tokio_stream::wrappers::ReceiverStream;
 use tracing::{info, error, warn};
 use uuid::Uuid;
 
@@ -81,6 +80,13 @@ impl SseServerState {
         Self {
             sessions: Arc::new(RwLock::new(HashMap::new())),
             service: Arc::new(service),
+        }
+    }
+
+    pub fn new_arc(service: Arc<ProxyMcpService>) -> Self {
+        Self {
+            sessions: Arc::new(RwLock::new(HashMap::new())),
+            service,
         }
     }
 
@@ -336,7 +342,16 @@ async fn message_endpoint(
 
 pub fn create_sse_router(service: ProxyMcpService) -> Router {
     let state = SseServerState::new(service);
+    create_router_from_state(state)
+}
 
+/// Создание роутера с Arc<ProxyMcpService> (чтобы proxy не терялся при клонировании)
+pub fn create_sse_router_arc(service: Arc<ProxyMcpService>) -> Router {
+    let state = SseServerState::new_arc(service);
+    create_router_from_state(state)
+}
+
+fn create_router_from_state(state: SseServerState) -> Router {
     Router::new()
         .route("/sse", get(sse_endpoint))
         .route("/message", post(message_endpoint))
