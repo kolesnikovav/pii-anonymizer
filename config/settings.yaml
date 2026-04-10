@@ -46,7 +46,7 @@ proxy:
         - ghcr.io/github/github-mcp-server
       env:
         GITHUB_PERSONAL_ACCESS_TOKEN: ""  # Установите через переменную окружения
-      enabled: false  # Включите когда добавите токен
+      enabled: false  # Требуется HTTP transport proxy (пока не реализовано)
 
 # Logging
 logging:

@@ -14,7 +14,6 @@ services:
     environment:
       - ANONYMIZER__DEFAULT_STRATEGY=mask
       - RUST_LOG=info
-      - GITHUB_TOKEN=${GITHUB_TOKEN:-}  # GitHub PAT token (необязательно)
     networks:
       - mcp-network
     healthcheck:
