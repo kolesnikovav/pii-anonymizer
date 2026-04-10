@@ -1,5 +1,6 @@
 # Multi-stage build
-FROM rust:1.83-slim-bookworm AS builder
+FROM rust:latest AS builder
+# Rust 1.85+ required for edition2024 (clap_derive 4.6)
 
 WORKDIR /app
 
@@ -40,10 +41,11 @@ COPY --from=builder /app/config/settings.yaml /app/config/
 # Настройка окружения
 ENV RUST_LOG=info
 EXPOSE 3000
+EXPOSE 3001
 
-# Health check
+# Health check (на порту 3001)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
-    CMD curl -f http://localhost:3000/api/v1/health || exit 1
+    CMD curl -f http://localhost:3001/api/v1/health || exit 1
 
 # Запуск приложения
 CMD ["pii-anonymizer"]

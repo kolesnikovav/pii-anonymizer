@@ -110,7 +110,21 @@ async fn run_http_server(
     // Создаём rmcp MCP сервис
     let _mcp_service = mcp::server::AnonymizerService::new(engine.clone());
 
-    // Запускаем rmcp SSE сервер
+    // Запускаем Axum health server на отдельном порту (3001 для health)
+    let health_app = axum::Router::new()
+        .route("/api/v1/health", axum::routing::get(|| async { "OK" }));
+
+    let health_addr = format!("{}:{}", settings.server.host, settings.server.port + 1);
+    let listener = tokio::net::TcpListener::bind(&health_addr).await?;
+
+    tokio::spawn(async move {
+        info!("🏥 Health server запущен на {}", health_addr);
+        axum::serve(listener, health_app)
+            .await
+            .expect("Health server failed");
+    });
+
+    // Запускаем rmcp SSE сервер на основном порту
     let bind_addr = format!("{}:{}", settings.server.host, settings.server.port)
         .parse::<std::net::SocketAddr>()?;
 
