@@ -180,11 +180,12 @@ impl StdioConnection {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-/// HTTP подключение (JSON-RPC через HTTP POST)
+/// HTTP/SSE подключение (SSE endpoint + POST messages)
 // ═══════════════════════════════════════════════════════════════════════════
 
 struct HttpConnection {
     base_url: String,
+    session_id: Arc<Mutex<Option<String>>>,
     client: reqwest::Client,
     headers: HashMap<String, String>,
     request_id: Arc<Mutex<u64>>,
@@ -194,45 +195,61 @@ impl HttpConnection {
     fn new(url: String, headers: HashMap<String, String>) -> Self {
         Self {
             base_url: url.trim_end_matches('/').to_string(),
+            session_id: Arc::new(Mutex::new(None)),
             client: reqwest::Client::new(),
             headers,
             request_id: Arc::new(Mutex::new(1)),
         }
     }
 
+    async fn get_session_id(&self) -> Result<String, String> {
+        let mut session = self.session_id.lock().await;
+        if session.is_some() { return Ok(session.as_ref().unwrap().clone()); }
+
+        info!("   🔄 SSE подключение к {}/sse...", self.base_url);
+        let resp = self.client.get(&format!("{}/sse", self.base_url))
+            .send().await.map_err(|e| format!("SSE: {}", e))?;
+        let body = resp.text().await.map_err(|e| format!("Read SSE: {}", e))?;
+
+        if let Some(line) = body.lines().find(|l| l.starts_with("data: ")) {
+            let endpoint = line.trim_start_matches("data: ");
+            if let Some(sid) = endpoint.split("sessionId=").nth(1) {
+                info!("   ✅ Session: {}...", &sid[..20.min(sid.len())]);
+                *session = Some(sid.to_string());
+                return Ok(sid.to_string());
+            }
+        }
+        Err("Failed to get session ID".to_string())
+    }
+
     async fn send_request(&self, method: &str, params: serde_json::Value) -> Result<serde_json::Value, String> {
         let id = { let mut id = self.request_id.lock().await; let c = *id; *id += 1; c };
+        let session_id = self.get_session_id().await?;
 
         let request = JsonRpcRequest {
             jsonrpc: "2.0".to_string(), id, method: method.to_string(), params,
         };
 
-        let mut req = self.client.post(&self.base_url)
-            .header("Content-Type", "application/json");
+        let message_url = format!("{}/message?sessionId={}", self.base_url, session_id);
+        info!("   📡 {} → {}", method, message_url);
 
-        for (k, v) in &self.headers {
-            req = req.header(k, v);
-        }
+        let mut req = self.client.post(&message_url).header("Content-Type", "application/json");
+        for (k, v) in &self.headers { req = req.header(k, v); }
 
-        let response = req
-            .json(&request)
-            .send()
-            .await
-            .map_err(|e| format!("HTTP request failed: {}", e))?;
+        let resp = req.json(&request).send().await
+            .map_err(|e| format!("HTTP: {}", e))?;
+        let body = resp.text().await.map_err(|e| format!("Read: {}", e))?;
 
-        let status = response.status();
-        if !status.is_success() {
-            return Err(format!("HTTP {}: {}", status, response.text().await.unwrap_or_default()));
-        }
+        let json_str = body.lines().find(|l| l.starts_with("data: "))
+            .map(|l| l.trim_start_matches("data: ")).unwrap_or(&body);
 
-        let body: serde_json::Value = response.json().await
-            .map_err(|e| format!("Parse response: {}", e))?;
+        let result: serde_json::Value = serde_json::from_str(json_str)
+            .map_err(|e| format!("Parse: {} from: {}", e, json_str))?;
 
-        if let Some(err) = body.get("error") {
+        if let Some(err) = result.get("error") {
             return Err(format!("MCP error: {}", err));
         }
-
-        body.get("result").cloned().ok_or("Empty result".to_string())
+        result.get("result").cloned().ok_or("Empty result".to_string())
     }
 }
 

@@ -22,7 +22,10 @@
       "Bash(cargo run *)",
       "Bash(sleep *)",
       "Bash(curl *)",
-      "Bash(git checkout *)"
+      "Bash(git checkout *)",
+      "Bash(docker pull *)",
+      "Bash(docker rm *)",
+      "Bash(git rm *)"
     ]
   },
   "$version": 3

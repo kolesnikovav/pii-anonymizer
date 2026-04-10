@@ -31,22 +31,11 @@ mcp:
 # Proxy configuration — upstream MCP servers
 proxy:
   upstream_servers:
-    # GitHub MCP Server — предоставляет инструменты для работы с GitHub
+    # GitHub MCP Server — подключается через HTTP proxy
     github:
-      transport: stdio
-      command: docker
-      args:
-        - run
-        - -i
-        - --rm
-        - -e
-        - GITHUB_PERSONAL_ACCESS_TOKEN
-        - -e
-        - GITHUB_TOOLSETS=all
-        - ghcr.io/github/github-mcp-server
-      env:
-        GITHUB_PERSONAL_ACCESS_TOKEN: ""  # Установите через переменную окружения
-      enabled: false  # Требуется HTTP transport proxy (пока не реализовано)
+      transport: http
+      url: "http://github-mcp-proxy:3001"
+      enabled: true  # Включено для проксирования через PII-Anonymizer
 
 # Logging
 logging:
