@@ -1,12 +1,62 @@
 # Deployment
 
+## Quick Start
+
+### Docker (recommended)
+
+```bash
+docker pull ghcr.io/<owner>/pii-anonymizer:latest
+docker run -p 3000:3000 ghcr.io/<owner>/pii-anonymizer:latest
+```
+
+Multi-architecture support — works on x86_64, ARM64, and ARMv7:
+
+| Platform | Architecture |
+|----------|-------------|
+| x86_64 desktop/server | `amd64` |
+| Raspberry Pi 4/5, Apple Silicon | `arm64` |
+| Raspberry Pi 2/3 | `arm/v7` |
+
+### Debian Package
+
+```bash
+sudo dpkg -i pii-anonymizer_*.deb
+sudo systemctl start pii-anonymizer
+sudo systemctl status pii-anonymizer
+```
+
+### Binary
+
+```bash
+chmod +x pii-anonymizer-*-x86_64-linux
+./pii-anonymizer-*-x86_64-linux
+```
+
+---
+
 ## Docker
+
+### Pull from Registry
+
+```bash
+docker pull ghcr.io/<owner>/pii-anonymizer:latest
+```
+
+### Run with Config
+
+```bash
+docker run -p 3000:3000 \
+  -v $(pwd)/config:/etc/pii-anonymizer \
+  ghcr.io/<owner>/pii-anonymizer:latest
+```
+
+### Docker Compose
 
 ```bash
 docker compose up -d
 ```
 
-## Manual Build
+### Manual Build
 
 ```bash
 docker build -t pii-anonymizer .

@@ -1,12 +1,62 @@
 # Развёртывание
 
+## Быстрый старт
+
+### Docker (рекомендуется)
+
+```bash
+docker pull ghcr.io/<owner>/pii-anonymizer:latest
+docker run -p 3000:3000 ghcr.io/<owner>/pii-anonymizer:latest
+```
+
+Мультиархитектурность — работает на x86_64, ARM64 и ARMv7:
+
+| Платформа | Архитектура |
+|-----------|-------------|
+| x86_64 desktop/сервер | `amd64` |
+| Raspberry Pi 4/5, Apple Silicon | `arm64` |
+| Raspberry Pi 2/3 | `arm/v7` |
+
+### Debian пакет
+
+```bash
+sudo dpkg -i pii-anonymizer_*.deb
+sudo systemctl start pii-anonymizer
+sudo systemctl status pii-anonymizer
+```
+
+### Бинарник
+
+```bash
+chmod +x pii-anonymizer-*-x86_64-linux
+./pii-anonymizer-*-x86_64-linux
+```
+
+---
+
 ## Docker
+
+### Pull из реестра
+
+```bash
+docker pull ghcr.io/<owner>/pii-anonymizer:latest
+```
+
+### Запуск с конфигом
+
+```bash
+docker run -p 3000:3000 \
+  -v $(pwd)/config:/etc/pii-anonymizer \
+  ghcr.io/<owner>/pii-anonymizer:latest
+```
+
+### Docker Compose
 
 ```bash
 docker compose up -d
 ```
 
-## Ручная сборка
+### Ручная сборка
 
 ```bash
 docker build -t pii-anonymizer .
