@@ -1,8 +1,8 @@
-# MCP Proxy — проксирование upstream серверов
+# MCP Proxy — Upstream Server Proxying
 
-PII Anonymizer подключается к внешним MCP серверам и проксирует их инструменты. Перед проксированием аргументы анонимизируются.
+PII Anonymizer connects to external MCP servers and proxies their tools. Arguments are anonymized before proxying.
 
-## Подключение внешнего сервера
+## Connecting an External Server
 
 ```yaml
 # config/settings.yaml
@@ -13,15 +13,15 @@ proxy:
       command: docker
       args: ["run", "-i", "--rm", "-e", "GITHUB_PERSONAL_ACCESS_TOKEN", "ghcr.io/github/github-mcp-server"]
       env:
-        GITHUB_PERSONAL_ACCESS_TOKEN: ""  # подставится из окружения
+        GITHUB_PERSONAL_ACCESS_TOKEN: ""  # will be populated from environment
       enabled: true
 ```
 
-Пустые значения в `env` автоматически подставляются из переменных окружения процесса (удобно для `.env` в docker-compose).
+Empty values in `env` are automatically populated from the process environment variables (convenient for `.env` in docker-compose).
 
-## Выборочная анонимизация
+## Selective Anonymization
 
-По умолчанию анонимизируются **все** строковые значения. Можно настроить конкретно:
+By default, **all** string values are anonymized. You can configure this specifically:
 
 ```yaml
 proxy:
@@ -34,19 +34,19 @@ proxy:
         SEARXNG_URL: "http://searxng:8080"
       enabled: true
       anonymize_fields:
-        searxng_web_search: ["query"]   # анонимизировать только запрос
-        web_url_read: []                 # [] = не анонимизировать
+        searxng_web_search: ["query"]   # anonymize only the query
+        web_url_read: []                 # [] = do not anonymize
 ```
 
-### Правила anonymize_fields
+### anonymize_fields Rules
 
-| Значение | Поведение |
+| Value | Behavior |
 |----------|-----------|
-| Не указано | Анонимизировать все строки (обратная совместимость) |
-| `[]` | Отключить анонимизацию для инструмента |
-| `["query", "body"]` | Анонимизировать только указанные поля |
+| Not specified | Anonymize all strings (backward compatibility) |
+| `[]` | Disable anonymization for the tool |
+| `["query", "body"]` | Anonymize only the specified fields |
 
-### Пример: GitHub
+### Example: GitHub
 
 ```yaml
 proxy:
@@ -61,5 +61,5 @@ proxy:
       anonymize_fields:
         create_issue: ["body", "title"]
         create_pull_request: ["body", "title"]
-        search_code: []                 # не анонимизировать поисковый запрос
+        search_code: []                 # do not anonymize the search query
 ```

@@ -3,7 +3,7 @@ use crate::mcp::client::McpProxyManager;
 use std::collections::HashMap;
 use tracing::info;
 
-/// Правила анонимизации для одного upstream сервера
+/// Anonymization rules for одного upstream сервера
 #[derive(Debug, Clone)]
 pub struct ServerAnonymizationRules {
     /// tool_name → список полей для анонимизации
@@ -34,7 +34,7 @@ impl AnonymizingProxy {
 
     /// Установить правила анонимизации для сервера
     pub fn set_rules(&mut self, server_name: String, rules: ServerAnonymizationRules) {
-        info!("📋 Правила анонимизации для '{}': {} инструментов",
+        info!("📋 Anonymization rules for '{}': {} tools",
             server_name, rules.tool_fields.len());
         self.rules.insert(server_name, rules);
     }

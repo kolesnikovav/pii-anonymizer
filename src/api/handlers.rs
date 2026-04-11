@@ -43,11 +43,11 @@ pub async fn anonymize(
     
     let (_settings, anonymizer) = state;
     
-    info!("📨 Запрос на анонимизацию: {} символов", request.text.len());
-    
+    info!("Anonymization request: {} chars", request.text.len());
+
     let response = anonymizer.anonymize(&request);
-    
-    info!("✅ Анонимизация завершена: {} PII найдено", response.detected_pii.len());
+
+    info!("Anonymization complete: {} PII found", response.detected_pii.len());
     
     Ok(Json(response))
 }
@@ -85,7 +85,7 @@ pub async fn batch_anonymize(
     
     let (_, anonymizer) = state;
     
-    info!("📨 Пакетный запрос: {} элементов", request.requests.len());
+    info!("Batch request: {} items", request.requests.len());
     
     let results = anonymizer.anonymize_batch(&request.requests);
     let total_processed = results.len();
@@ -112,7 +112,7 @@ pub async fn sse_stream() -> Sse<impl StreamExt<Item = Result<axum::response::ss
             .unwrap())
     });
     
-    info!("📡 SSE стрим запущен");
+    info!("SSE stream started");
     Sse::new(stream)
 }
 

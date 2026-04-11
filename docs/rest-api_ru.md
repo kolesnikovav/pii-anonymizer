@@ -4,7 +4,7 @@
 
 ### POST /api/v1/anonymize
 
-Text anonymization.
+Анонимизация текста.
 
 ```bash
 curl -X POST http://localhost:3000/api/v1/anonymize \
@@ -12,7 +12,7 @@ curl -X POST http://localhost:3000/api/v1/anonymize \
   -d '{"text": "Email: john@test.com, phone: +7-999-123-45-67"}'
 ```
 
-**Response:**
+**Ответ:**
 ```json
 {
   "anonymized_text": "Email: jo***@***om, phone: +79***67",
@@ -25,7 +25,7 @@ curl -X POST http://localhost:3000/api/v1/anonymize \
 
 ### POST /api/v1/detect
 
-PII detection without replacement.
+Обнаружение PII без замены.
 
 ```bash
 curl -X POST http://localhost:3000/api/v1/detect \
@@ -35,7 +35,7 @@ curl -X POST http://localhost:3000/api/v1/detect \
 
 ### POST /api/v1/batch
 
-Batch processing.
+Пакетная обработка.
 
 ```bash
 curl -X POST http://localhost:3000/api/v1/batch \
@@ -54,7 +54,7 @@ Health check.
 curl http://localhost:3000/api/v1/health
 ```
 
-### SSE Streaming
+### SSE стриминг
 
-- `GET /api/v1/sse/stream` -- SSE streaming for anonymization
-- `GET /sse` -- MCP SSE endpoint for client connections
+- `GET /api/v1/sse/stream` — SSE стриминг анонимизации
+- `GET /sse` — MCP SSE endpoint для подключения клиентов

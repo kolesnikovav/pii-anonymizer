@@ -1,36 +1,36 @@
-# PII паттерны
+# PII Patterns
 
-## Персональные данные
+## Personal Data
 
-| Паттерн | Описание | Пример |
+| Pattern | Description | Example |
 |---------|----------|--------|
-| `email` | Email адреса | `user@example.com` |
-| `phone_ru` | Телефоны РФ | `+7-999-123-45-67` |
-| `passport_ru` | Паспорта РФ | `4510 123456` |
-| `snils` | СНИЛС | `123-456-789 00` |
-| `inn` | ИНН (физ/юр) | `7707083893` |
+| `email` | Email addresses | `user@example.com` |
+| `phone_ru` | Russian phone numbers | `+7-999-123-45-67` |
+| `passport_ru` | Russian passports | `4510 123456` |
+| `snils` | SNILS (Russian pension insurance number) | `123-456-789 00` |
+| `inn` | INN (tax ID for individuals/entities) | `7707083893` |
 
-## Финансовые
+## Financial
 
-| Паттерн | Описание | Пример |
+| Pattern | Description | Example |
 |---------|----------|--------|
-| `credit_card` | Кредитные карты | `4111 1111 1111 1111` |
+| `credit_card` | Credit cards | `4111 1111 1111 1111` |
 
-## Технические секреты
+## Technical Secrets
 
-| Паттерн | Описание | Пример |
+| Pattern | Description | Example |
 |---------|----------|--------|
-| `api_key_aws` | AWS ключи | `AKIAIOSFODNN7EXAMPLE` |
-| `api_key_github` | GitHub токены | `ghp_...`, `gho_...` |
-| `access_token_jwt` | JWT токены | `eyJhbG...` |
-| `ssh_key_rsa` | SSH RSA ключи | `ssh-rsa AAAA...` |
-| `ssh_key_ed25519` | SSH ED25519 ключи | `ssh-ed25519 AAAA...` |
+| `api_key_aws` | AWS keys | `AKIAIOSFODNN7EXAMPLE` |
+| `api_key_github` | GitHub tokens | `ghp_...`, `gho_...` |
+| `access_token_jwt` | JWT tokens | `eyJhbG...` |
+| `ssh_key_rsa` | SSH RSA keys | `ssh-rsa AAAA...` |
+| `ssh_key_ed25519` | SSH ED25519 keys | `ssh-ed25519 AAAA...` |
 
-## Сетевые данные
+## Network Data
 
-| Паттерн | Описание | Пример |
+| Pattern | Description | Example |
 |---------|----------|--------|
-| `ip_address` | IPv4 адреса | `192.168.1.1` |
-| `domain_unknown` | Неизвестные домены | `secret-server.ru` |
+| `ip_address` | IPv4 addresses | `192.168.1.1` |
+| `domain_unknown` | Unknown domains | `secret-server.ru` |
 
-**Умная фильтрация доменов**: пропускает 30+ известных доменов (google.com, yandex.ru, github.com и др.)
+**Smart domain filtering**: skips 30+ known domains (google.com, yandex.ru, github.com, etc.)

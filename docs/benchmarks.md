@@ -1,161 +1,161 @@
-# Бенчмарки производительности
+# Performance Benchmarks
 
-Сравнительные тесты производительности PII Anonymizer и аналогов.
+Comparative performance tests of PII Anonymizer and alternatives.
 
-## 📊 Методология
+## Methodology
 
-### Что измеряем
-- **Скорость анонимизации** - количество текстов, обработанных в секунду
-- **Общее время** - время обработки всего набора тестовых данных
+### What We Measure
+- **Anonymization speed** -- number of texts processed per second
+- **Total time** -- time to process the entire test dataset
 
-### Что НЕ измеряем
-- Время запуска сервиса
-- Время инициализации/прогрева
-- Потребление памяти
-- Время ответа HTTP API (для PII Anonymizer измеряем напрямую через library)
+### What We Do NOT Measure
+- Service startup time
+- Initialization/warmup time
+- Memory consumption
+- HTTP API response time (for PII Anonymizer, measured directly via library)
 
-### Тестовые данные
-- **1,700 текстов** с различными типами PII
-- Типы PII: email, телефон, IP, паспорт, СНИЛС, AWS ключи, SSH ключи
-- Комбинированные тексты с несколькими PII
-- Разнообразные форматы для каждого типа
+### Test Data
+- **1,700 texts** with various PII types
+- PII types: email, phone, IP, passport, SNILS, AWS keys, SSH keys
+- Combined texts with multiple PII entries
+- Diverse formats for each type
 
-### Условия тестирования
-- PII Anonymizer: напрямую через library (без HTTP)
-- Presidio: через HTTP API (Docker контейнер)
-- Release сборки для всех сервисов
+### Testing Conditions
+- PII Anonymizer: directly via library (without HTTP)
+- Presidio: via HTTP API (Docker container)
+- Release builds for all services
 
-## 🚀 Результаты
+## Results
 
 ### PII Anonymizer
 
-| Метрика | Значение |
+| Metric | Value |
 |---------|----------|
-| **Текстов обработано** | 1,700 |
-| **Общее время** | 0.007 сек |
-| **Производительность** | **243,473 текстов/сек** |
+| **Texts processed** | 1,700 |
+| **Total time** | 0.007 sec |
+| **Throughput** | **243,473 texts/sec** |
 
 ### Presidio
 
-| Метрика | Значение |
+| Metric | Value |
 |---------|----------|
-| **Текстов обработано** | 1,100 |
-| **Общее время** | 13.692 сек |
-| **Производительность** | **80 текстов/сек** |
+| **Texts processed** | 1,100 |
+| **Total time** | 13.692 sec |
+| **Throughput** | **80 texts/sec** |
 
-> ℹ️ Бенчмарк Presidio выполнен через HTTP API (2 контейнера: analyzer + anonymizer)
+> Note: Presidio benchmark was run via HTTP API (2 containers: analyzer + anonymizer)
 
-## 📈 Сравнительная таблица
+## Comparison Table
 
-| Сервис | Производительность | Относительная скорость |
+| Service | Throughput | Relative Speed |
 |--------|-------------------|------------------------|
-| **PII Anonymizer** | 243,473 текстов/сек | **1.0x** (базовый) |
-| **Presidio** | 80 текстов/сек | **0.0003x** (в 3,043 раза медленнее) |
+| **PII Anonymizer** | 243,473 texts/sec | **1.0x** (baseline) |
+| **Presidio** | 80 texts/sec | **0.0003x** (3,043x slower) |
 
-### 📊 Визуальное сравнение
+### Visual Comparison
 
 ```
-PII Anonymizer: █████████████████████████████████████████████████████████████████████ 243,473 текстов/сек
-Presidio:       ▏                                                                   80 текстов/сек
+PII Anonymizer: █████████████████████████████████████████████████████████████████████ 243,473 texts/sec
+Presidio:       ▏                                                                   80 texts/sec
 ```
 
-## 🔬 Технические детали
+## Technical Details
 
 ### PII Anonymizer
-- **Язык**: Rust
-- **Метод обнаружения**: Regex паттерны
-- **Стратегия**: Mask (по умолчанию)
-- **Паттернов**: 14 активных
-- **Среда выполнения**: Native binary, release сборка
+- **Language**: Rust
+- **Detection method**: Regex patterns
+- **Strategy**: Mask (default)
+- **Patterns**: 14 active
+- **Runtime**: Native binary, release build
 
 ### Presidio
-- **Язык**: Python
-- **Метод обнаружения**: NLP (spaCy) + Regex
-- **Стратегия**: Replace (по умолчанию)
-- **Среда выполнения**: Docker контейнер
+- **Language**: Python
+- **Detection method**: NLP (spaCy) + Regex
+- **Strategy**: Replace (default)
+- **Runtime**: Docker container
 
-## 📂 Структура бенчмарков
+## Benchmark Structure
 
 ```
 benchmarks/
-├── benchmark_pii_anonymizer.rs    # Бенчмарк PII Anonymizer (Rust)
-├── benchmark_presidio.py          # Бенчмарк Presidio (Python)
-├── run_benchmarks.sh              # Главный скрипт запуска
+├── benchmark_pii_anonymizer.rs    # PII Anonymizer benchmark (Rust)
+├── benchmark_presidio.py          # Presidio benchmark (Python)
+├── run_benchmarks.sh              # Main run script
 ├── scripts/
-│   └── presidio_server.sh         # Скрипт управления Presidio
-├── data/                          # Тестовые данные (генерируются автоматически)
-└── results/                       # Результаты бенчмарков
+│   └── presidio_server.sh         # Presidio management script
+├── data/                          # Test data (generated automatically)
+└── results/                       # Benchmark results
     ├── pii_anonymizer.log
     ├── presidio.log
     └── benchmark_results.txt
 ```
 
-## 🏃 Запуск бенчмарков
+## Running Benchmarks
 
-### Полный бенчмарк (PII Anonymizer + Presidio)
+### Full Benchmark (PII Anonymizer + Presidio)
 
 ```bash
 cd benchmarks
 ./run_benchmarks.sh
 ```
 
-### Только PII Anonymizer
+### PII Anonymizer Only
 
 ```bash
 cargo run --release --bin benchmark_pii_anonymizer
 ```
 
-### Только Presidio
+### Presidio Only
 
 ```bash
-# Запуск Presidio
+# Start Presidio
 bash benchmarks/scripts/presidio_server.sh start
 
-# Запуск бенчмарка
+# Run benchmark
 python3 benchmarks/benchmark_presidio.py http://localhost:5002
 
-# Остановка Presidio
+# Stop Presidio
 bash benchmarks/scripts/presidio_server.sh stop
 ```
 
-## 📝 Примечания
+## Notes
 
-1. **Справедливость сравнения**: 
-   - PII Anonymizer измеряется напрямую через library (без накладных расходов HTTP)
-   - Presidio измеряется через HTTP API (с накладными расходами сети)
-   - Это даёт Presidio небольшое преимущество в честности сравнения
+1. **Fairness of comparison**:
+   - PII Anonymizer is measured directly via library (no HTTP overhead)
+   - Presidio is measured via HTTP API (with network overhead)
+   - This gives Presidio a slight advantage in fairness
 
-2. **Различия в методах**:
-   - PII Anonymizer: только regex паттерны
-   - Presidio: NLP модели + regex
-   - Presidio более универсален, но медленнее
+2. **Method differences**:
+   - PII Anonymizer: regex patterns only
+   - Presidio: NLP model + regex
+   - Presidio is more universal but slower
 
-3. **Типы PII**:
-   - PII Anonymizer: специфичные для РФ (паспорт, СНИЛС, ИНН) + технические (API ключи, SSH)
-   - Presidio: международные (email, телефон, кредитные карты, person name)
+3. **PII types**:
+   - PII Anonymizer: Russia-specific (passport, SNILS, INN) + technical (API keys, SSH)
+   - Presidio: international (email, phone, credit cards, person name)
 
-## 📊 Выводы
+## Conclusions
 
-**PII Anonymizer** показывает превосходную производительность благодаря:
-- Компилируемому языку Rust
-- Оптимизированным regex паттернам
-- Отсутствию ML моделей и NLP анализа
-- Минимальным накладным расходам
-- **В 3,043 раза быстрее Presidio!**
+**PII Anonymizer** delivers excellent performance thanks to:
+- Compiled Rust language
+- Optimized regex patterns
+- No ML models or NLP analysis
+- Minimal overhead
+- **3,043x faster than Presidio!**
 
-**Presidio** обеспечивает более интеллектуальное обнаружение:
-- Контекстный анализ с NLP
-- Распознавание имён и локаций
-- Но ценой значительно большей вычислительной стоимости
+**Presidio** provides more intelligent detection:
+- Contextual analysis with NLP
+- Name and location recognition
+- But at a significantly higher computational cost
 
-### Ключевые цифры
+### Key Numbers
 
-- **PII Anonymizer**: 243,473 текстов/сек (0.007 сек на 1,700 текстов)
-- **Presidio**: 80 текстов/сек (13.7 сек на 1,100 текстов)
-- **Разница**: PII Anonymizer быстрее в **3,043 раза**
+- **PII Anonymizer**: 243,473 texts/sec (0.007 sec for 1,700 texts)
+- **Presidio**: 80 texts/sec (13.7 sec for 1,100 texts)
+- **Difference**: PII Anonymizer is **3,043x faster**
 
-Выбор зависит от ваших требований к производительности и типам обнаруживаемых PII!
+The choice depends on your performance requirements and the types of PII you need to detect!
 
 ---
 
-*Последнее обновление: 11 апреля 2026*
+*Last updated: April 11, 2026*

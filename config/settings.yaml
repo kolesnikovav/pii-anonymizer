@@ -21,7 +21,7 @@ patterns:
   - ssh_key_ed25519
   - domain_unknown
 
-# Кастомные PII паттерны (добавьте свои regex паттерны)
+# Custom PII patterns (add your own regex patterns)
 # custom_patterns:
 #   - name: "order_number"
 #     pii_type: "unknown"
@@ -32,7 +32,7 @@ patterns:
 #     pattern: "\\bINT-[A-Z]{2}-\\d{4}\\b"
 #     confidence: 0.85
 
-# Кастомные известныеные домены (не будут маскироваться)
+# Custom known domains (will not be masked)
 # custom_known_domains:
 #   - "my-company.com"
 #   - "internal.corp"

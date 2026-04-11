@@ -54,8 +54,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Инициализация логирования
     init_logging(&args.log_level);
 
-    info!("🚀 Запуск PII Anonymizer MCP Server");
-    info!("📋 Конфигурация: {}", args.config);
+    info!("Starting PII Anonymizer MCP Server");
+    info!("Config: {}", args.config);
 
     // Загрузка конфигурации из файла
     let mut settings = config::Settings::from_file(&args.config)?;
@@ -71,35 +71,35 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         settings.anonymizer.default_strategy = strategy.clone();
     }
 
-    // Проверка конфигурации (аналог nginx -t)
+    // Config validation (like nginx -t)
     if args.config_test {
         return run_config_test(&settings);
     }
 
-    info!("⚙️  Настройки: {}:{}, стратегия: {}",
+    info!("Settings: {}:{}, strategy: {}",
         settings.server.host,
         settings.server.port,
         settings.anonymizer.default_strategy
     );
 
-    // Инициализация анонимизатора
+    // Initialize anonymizer
     let anonymizer = anonymizer::AnonymizerEngine::new(&settings.anonymizer);
-    info!("🔍 Анонимизатор инициализирован");
+    info!("Anonymizer initialized");
 
-    // Режим MCP stdio
+    // MCP stdio mode
     if args.mcp_mode == "stdio" {
-        info!("🤖 Запуск в режиме MCP stdio");
+        info!("Running in MCP stdio mode");
         run_mcp_stdio(anonymizer).await?;
         return Ok(());
     }
 
-    // HTTP режим
+    // HTTP mode
     run_http_server(settings, anonymizer).await?;
 
     Ok(())
 }
 
-/// Запуск MCP в режиме stdio (через rmcp io transport)
+/// MCP stdio mode (via rmcp io transport)
 async fn run_mcp_stdio(engine: anonymizer::AnonymizerEngine) -> Result<(), Box<dyn std::error::Error>> {
     use rmcp::service::RunningService;
     use rmcp::ServiceExt;
@@ -111,30 +111,29 @@ async fn run_mcp_stdio(engine: anonymizer::AnonymizerEngine) -> Result<(), Box<d
     Ok(())
 }
 
-/// Запуск HTTP сервера с кастомным SSE транспортом для MCP
+/// HTTP server with custom SSE transport for MCP
 async fn run_http_server(
     settings: config::Settings,
     engine: anonymizer::AnonymizerEngine,
 ) -> Result<(), Box<dyn std::error::Error>> {
     use axum::Router;
 
-    // Создаём MCP сервис с поддержкой прокси
+    // Create MCP service with proxy support
     let mut mcp_service = mcp::ProxyMcpService::new(engine.clone());
 
-    // Подключаемся к внешним MCP серверам (если есть в конфигурации)
+    // Connect to external MCP servers (if configured)
     if !settings.proxy.upstream_servers.is_empty() {
-        info!("🔌 Подключение к {} внешним MCP серверам...", settings.proxy.upstream_servers.len());
+        info!("Connecting to {} external MCP servers...", settings.proxy.upstream_servers.len());
 
         let mut connections = Vec::new();
 
         for (name, config) in settings.proxy.upstream_servers.iter() {
             if !config.enabled {
-                info!("   ⊘ {} отключён, пропускаем", name);
+                info!("   ⊘ {} disabled, skipping", name);
                 continue;
             }
 
-            // Подставляем переменные окружения из окружения процесса
-            // Ключи в config.env могут быть в любом регистре (serde нормализует)
+            // Substitute env vars from process environment
             let mut config_clone = (*config).clone();
             for (key, value) in &mut config_clone.env {
                 if value.is_empty() {
@@ -142,7 +141,7 @@ async fn run_http_server(
                     for env_key in [key.as_str(), key_upper.as_str()] {
                         if let Ok(env_val) = std::env::var(env_key) {
                             *value = env_val;
-                            info!("   🔑 {} '{}' ← ${}", name, key, env_key);
+                            info!("   {} '{}' ← ${}", name, key, env_key);
                             break;
                         }
                     }
@@ -151,11 +150,11 @@ async fn run_http_server(
 
             match mcp::McpUpstreamConnection::connect(name.clone(), &config_clone).await {
                 Ok(conn) => {
-                    info!("   ✅ {} подключён ({} инструментов)", name, conn.tools.len());
+                    info!("   {} connected ({} tools)", name, conn.tools.len());
                     connections.push(conn);
                 }
                 Err(e) => {
-                    info!("   ❌ {} ошибка: {}", name, e);
+                    info!("   {} error: {}", name, e);
                 }
             }
         }
@@ -164,7 +163,7 @@ async fn run_http_server(
             let proxy_manager = mcp::McpProxyManager::new(connections);
             let mut anonymizing_proxy = mcp::AnonymizingProxy::new(proxy_manager, engine.clone());
 
-            // Устанавливаем правила анонимизации для каждого сервера
+            // Set anonymization rules for each server
             for (name, config) in &settings.proxy.upstream_servers {
                 if !config.anonymize_fields.is_empty() {
                     let rules = mcp::ServerAnonymizationRules {
@@ -178,31 +177,29 @@ async fn run_http_server(
         }
     }
 
-    // Оборачиваем в Arc чтобы не клонировать
+    // Wrap in Arc to avoid cloning
     let mcp_service = std::sync::Arc::new(mcp_service);
 
-    // Создаём Axum роутеры
+    // Create Axum routers
     let health_app = Router::new()
         .route("/api/v1/health", axum::routing::get(|| async { "OK" }));
 
-    // SSE MCP роутер — передаём Arc
     let sse_app = mcp::sse_transport::create_sse_router_arc(mcp_service);
 
-    // Объединяем в один роутер
     let app = Router::new()
         .merge(sse_app)
         .nest("/health", health_app);
 
-    // Запускаем сервер
+    // Start server
     let bind_addr = format!("{}:{}", settings.server.host, settings.server.port);
     let listener = tokio::net::TcpListener::bind(&bind_addr).await?;
 
-    info!("🤖 MCP SSE сервер запущен на {}", bind_addr);
-    info!("📡 SSE endpoint: http://{}/sse", bind_addr);
-    info!("📨 Message endpoint: http://{}/message", bind_addr);
-    info!("🏥 Health endpoint: http://{}:{}/api/v1/health", settings.server.host, settings.server.port);
+    info!("MCP SSE server running on {}", bind_addr);
+    info!("SSE endpoint: http://{}/sse", bind_addr);
+    info!("Message endpoint: http://{}/message", bind_addr);
+    info!("Health endpoint: http://{}:{}/api/v1/health", settings.server.host, settings.server.port);
 
-    info!("MCP сервер готов к подключению клиентов");
+    info!("MCP server ready for client connections");
 
     axum::serve(listener, app)
         .await?;
@@ -254,101 +251,101 @@ async fn shutdown_signal() {
         _ = terminate => {},
     }
 
-    tracing::info!("🛑 Получен сигнал завершения, graceful shutdown...");
+    tracing::info!("Shutdown signal received, graceful shutdown...");
 }
 
-/// Проверка конфигурации (аналог nginx -t)
+/// Config validation (like nginx -t)
 fn run_config_test(settings: &config::Settings) -> Result<(), Box<dyn std::error::Error>> {
     let mut errors: Vec<String> = Vec::new();
     let mut warnings: Vec<String> = Vec::new();
 
-    println!("🔍 Проверка конфигурации:");
+    println!("Configuration check:");
     println!();
 
-    // 1. Стратегия
+    // 1. Strategy
     match settings.anonymizer.default_strategy.as_str() {
         "replace" | "mask" | "hash" => {
-            println!("  ✅ Стратегия: {}", settings.anonymizer.default_strategy);
+            println!("  Strategy: {}", settings.anonymizer.default_strategy);
         }
         other => {
-            errors.push(format!("Неизвестная стратегия '{}'. Допустимые: replace, mask, hash", other));
+            errors.push(format!("Unknown strategy '{}'. Valid: replace, mask, hash", other));
         }
     }
 
-    // 2. Встроенные паттерны
+    // 2. Built-in patterns
     let builtin_patterns = anonymizer::patterns::get_all_patterns();
     let enabled_names: std::collections::HashSet<String> = settings.anonymizer.patterns.iter().cloned().collect();
     
     for name in &enabled_names {
         let found = builtin_patterns.iter().any(|p| &p.name == name);
         if found {
-            println!("  ✅ Паттерн: {}", name);
+            println!("  Pattern: {}", name);
         } else {
-            warnings.push(format!("Встроенный паттерн '{}' не найден", name));
+            warnings.push(format!("Built-in pattern '{}' not found", name));
         }
     }
 
-    // 3. Кастомные паттерны
+    // 3. Custom patterns
     for cp in &settings.anonymizer.custom_patterns {
         match anonymizer::patterns::PIIPattern::from_config(&cp.name, &cp.pii_type, &cp.pattern, cp.confidence) {
             Ok(p) => {
-                println!("  ✅ Кастомный паттерн: {} ({}), confidence={:.2}", cp.name, p.pii_type, cp.confidence);
+                println!("  Custom pattern: {} ({}), confidence={:.2}", cp.name, p.pii_type, cp.confidence);
             }
             Err(e) => {
-                errors.push(format!("Кастомный паттерн '{}': {}", cp.name, e));
+                errors.push(format!("Custom pattern '{}': {}", cp.name, e));
             }
         }
     }
 
-    // 4. Кастомные домены
+    // 4. Custom domains
     if !settings.anonymizer.custom_known_domains.is_empty() {
         for domain in &settings.anonymizer.custom_known_domains {
             if domain.is_empty() {
-                warnings.push("Пустой домен в custom_known_domains".to_string());
+                warnings.push("Empty domain in custom_known_domains".to_string());
             } else {
-                println!("  ✅ Домен (пропуск): {}", domain);
+                println!("  Domain (skip): {}", domain);
             }
         }
     }
 
-    // 5. Proxy upstream серверы
+    // 5. Proxy upstream servers
     for (name, config) in &settings.proxy.upstream_servers {
         if config.enabled {
             let transport_str = match config.transport {
                 mcp::client::McpTransport::Stdio => "stdio",
                 mcp::client::McpTransport::Http => "http",
             };
-            println!("  ✅ Proxy сервер: {} ({})", name, transport_str);
+            println!("  Proxy server: {} ({})", name, transport_str);
         }
     }
 
     // 6. Server
-    println!("  ✅ Сервер: {}:{}", settings.server.host, settings.server.port);
+    println!("  Server: {}:{}", settings.server.host, settings.server.port);
 
     println!();
 
-    // Итог
+    // Summary
     if errors.is_empty() && warnings.is_empty() {
-        println!("✅ Конфигурация валидна");
+        println!("Configuration is valid");
         Ok(())
     } else {
         if !warnings.is_empty() {
-            println!("⚠️  Предупреждения ({}):", warnings.len());
+            println!("Warnings ({}):", warnings.len());
             for w in &warnings {
-                println!("   ⚠️  {}", w);
+                println!("   {}", w);
             }
             println!();
         }
         if !errors.is_empty() {
-            println!("❌ Ошибки ({}):", errors.len());
+            println!("Errors ({}):", errors.len());
             for e in &errors {
-                println!("   ❌ {}", e);
+                println!("   {}", e);
             }
             println!();
-            println!("❌ Конфигурация невалидна");
-            return Err(format!("{} ошибок конфигурации", errors.len()).into());
+            println!("Configuration is invalid");
+            return Err(format!("{} configuration errors", errors.len()).into());
         }
-        println!("⚠️  Конфигурация валидна с предупреждениями");
+        println!("Configuration is valid with warnings");
         Ok(())
     }
 }

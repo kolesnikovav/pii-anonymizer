@@ -1,32 +1,32 @@
-# MCP Server
+# MCP сервер
 
-## Tools
+## Инструменты
 
-| Tool | Description | Parameters |
+| Инструмент | Описание | Параметры |
 |------------|----------|-----------|
-| `anonymize` | Text anonymization | `text` (req), `strategy` (opt) |
-| `detect_pii` | PII detection | `text` (req) |
-| `batch_anonymize` | Batch processing | `texts` (req), `strategy` (opt) |
+| `anonymize` | Анонимизация текста | `text` (req), `strategy` (opt) |
+| `detect_pii` | Обнаружение PII | `text` (req) |
+| `batch_anonymize` | Пакетная обработка | `texts` (req), `strategy` (opt) |
 
-## Launch Modes
+## Режимы запуска
 
-| Mode | Transport | Use Case |
+| Режим | Транспорт | Для чего |
 |-------|-----------|----------|
-| HTTP SSE | `GET /sse` + `POST /message` | AnythingLLM, web clients |
+| HTTP SSE | `GET /sse` + `POST /message` | AnythingLLM, веб-клиенты |
 | STDIO | stdin/stdout | Claude Desktop, VS Code |
 
 ## SSE Transport
 
-### 1. Connection
+### 1. Подключение
 
 ```bash
 curl -N http://localhost:3000/sse
-# Returns:
+# Возвращает:
 # event: endpoint
 # data: /message?sessionId=abc123
 ```
 
-### 2. Initialization
+### 2. Инициализация
 
 ```bash
 curl -X POST "http://localhost:3000/message?sessionId=abc123" \
@@ -34,7 +34,7 @@ curl -X POST "http://localhost:3000/message?sessionId=abc123" \
   -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"client","version":"0.1.0"}}}'
 ```
 
-### 3. List Tools
+### 3. Список инструментов
 
 ```bash
 curl -X POST "http://localhost:3000/message?sessionId=abc123" \
@@ -42,7 +42,7 @@ curl -X POST "http://localhost:3000/message?sessionId=abc123" \
   -d '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}'
 ```
 
-### 4. Tool Call
+### 4. Вызов инструмента
 
 ```bash
 curl -X POST "http://localhost:3000/message?sessionId=abc123" \
@@ -50,10 +50,10 @@ curl -X POST "http://localhost:3000/message?sessionId=abc123" \
   -d '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"anonymize","arguments":{"text":"Email: test@example.com"}}}'
 ```
 
-### Running in stdio Mode
+### Запуск в режиме stdio
 
 ```bash
 cargo run -- --mcp-mode stdio
 ```
 
-For Claude Desktop, VS Code -- connects automatically via stdin/stdout.
+Для Claude Desktop, VS Code — подключается через stdin/stdout автоматически.

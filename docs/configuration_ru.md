@@ -1,6 +1,6 @@
-# Configuration
+# Конфигурация
 
-## Configuration File
+## Файл конфигурации
 
 `config/settings.yaml`:
 
@@ -41,24 +41,24 @@ logging:
   format: "pretty"
 ```
 
-## CLI Arguments
+## CLI аргументы
 
-| Argument | Description | Default |
-|----------|-------------|---------|
-| `-c, --config` | Path to configuration file | `config/settings.yaml` |
-| `--host` | Server host | from config |
-| `--port` | Server port | from config |
-| `-s, --strategy` | Anonymization strategy | from config |
-| `--mcp-mode` | MCP mode: `http`, `stdio` | `http` |
-| `--log-level` | Logging level | `info` |
+| Аргумент | Описание | По умолчанию |
+|----------|----------|--------------|
+| `-c, --config` | Путь к конфигу | `config/settings.yaml` |
+| `--host` | Хост сервера | из конфига |
+| `--port` | Порт сервера | из конфига |
+| `-s, --strategy` | Стратегия анонимизации | из конфига |
+| `--mcp-mode` | Режим MCP: `http`, `stdio` | `http` |
+| `--log-level` | Уровень логирования | `info` |
 
 ```bash
 pii-anonymizer --config config/settings.yaml --strategy hash --port 8080
 ```
 
-## Environment Variables
+## Переменные окружения
 
-Priority: CLI > ENV > configuration file.
+Приоритет: CLI > ENV > файл конфигурации.
 
 ```bash
 ANONYMIZER__DEFAULT_STRATEGY=mask
@@ -67,4 +67,4 @@ ANONYMIZER__SERVER__PORT=3000
 ANONYMIZER__LOGGING__LEVEL=debug
 ```
 
-Use `__` as the separator for nested keys.
+Разделитель `__` для вложенных ключей.

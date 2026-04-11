@@ -1,8 +1,8 @@
-# Integrations
+# Интеграции
 
 ## AnythingLLM
 
-### SearXNG Example (No Tokens Required)
+### SearXNG пример (без токенов)
 
 ```bash
 cd examples/anythingllm-searxng
@@ -15,30 +15,30 @@ docker compose up -d
    - **Type**: `SSE`
    - **URL**: `http://pii-anonymizer:3000/sse`
 
-**Tools**: anonymize, detect_pii, batch_anonymize + searxng_web_search, web_url_read
+**Инструменты**: anonymize, detect_pii, batch_anonymize + searxng_web_search, web_url_read
 
-### GitHub MCP Server (Requires Token)
+### GitHub MCP Server (требует токен)
 
 ```bash
 cd examples/anythingllm-github
 cp .env.example .env
-# Set GITHUB_PERSONAL_ACCESS_TOKEN in .env
+# Укажите GITHUB_PERSONAL_ACCESS_TOKEN в .env
 docker compose up -d
 ```
 
-## SearXNG (Web Search)
+## SearXNG (веб-поиск)
 
-Private meta-search engine. No tokens required. Works worldwide.
+Приватный мета-поисковик. Без токенов. Работает из РФ.
 
-Example: [`examples/anythingllm-searxng/`](../examples/anythingllm-searxng/)
+Пример: [`examples/anythingllm-searxng/`](../examples/anythingllm-searxng/)
 
-| Service | Port | Description |
-|---------|------|-------------|
-| SearXNG | 8080 | Search engine |
-| PII Anonymizer | 3000 | MCP server + proxy |
-| AnythingLLM | 3001 | Web interface |
+| Сервис | Порт | Описание |
+|--------|------|----------|
+| SearXNG | 8080 | Поисковый движок |
+| PII Anonymizer | 3000 | MCP сервер + прокси |
+| AnythingLLM | 3001 | Веб-интерфейс |
 
-### Configuring Search Engines
+### Настройка поисковых движков
 
 `searxng-settings.yml`:
 

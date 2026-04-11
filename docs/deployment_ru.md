@@ -1,4 +1,4 @@
-# Deployment
+# Развёртывание
 
 ## Docker
 
@@ -6,14 +6,14 @@
 docker compose up -d
 ```
 
-## Manual Build
+## Ручная сборка
 
 ```bash
 docker build -t pii-anonymizer .
 docker run -p 3000:3000 -v $(pwd)/config:/app/config:ro pii-anonymizer
 ```
 
-## Environment Variables
+## Переменные окружения
 
 ```bash
 docker run -p 3000:3000 \
@@ -22,9 +22,9 @@ docker run -p 3000:3000 \
   pii-anonymizer
 ```
 
-## MCP Proxy — Docker Access
+## MCP Proxy — доступ к Docker
 
-To proxy upstream MCP servers through Docker, access to the Docker socket is required:
+Для проксирования upstream MCP серверов через Docker нужен доступ к docker socket:
 
 ```yaml
 # docker-compose.yml
@@ -32,20 +32,20 @@ services:
   pii-anonymizer:
     volumes:
       - /run/user/1000/docker.sock:/var/run/docker.sock  # rootless
-      # or
-      - /var/run/docker.sock:/var/run/docker.sock        # standard
+      # или
+      - /var/run/docker.sock:/var/run/docker.sock        # стандартный
     user: root
 ```
 
 ## Production
 
-### Health Check
+### Health check
 
 ```bash
 curl http://localhost:3000/api/v1/health
 ```
 
-### Recommended Settings
+### Рекомендуемые настройки
 
 ```yaml
 server:

@@ -14,16 +14,16 @@ pub struct AnonymizerEngine {
 
 impl AnonymizerEngine {
     pub fn new(settings: &AnonymizerSettings) -> Self {
-        // Загрузка кастомных паттернов из конфига
+        // Load custom patterns from config
         let custom_patterns: Vec<PIIPattern> = settings.custom_patterns.iter()
             .filter_map(|cp| {
                 match PIIPattern::from_config(&cp.name, &cp.pii_type, &cp.pattern, cp.confidence) {
                     Ok(p) => {
-                        info!("✅ Кастомный паттерн: {}", cp.name);
+                        info!("Custom pattern: {}", cp.name);
                         Some(p)
                     }
                     Err(e) => {
-                        warn!("⚠️ Пропущен кастомный паттерн '{}': {}", cp.name, e);
+                        warn!("Skipping custom pattern '{}': {}", cp.name, e);
                         None
                     }
                 }
@@ -32,7 +32,7 @@ impl AnonymizerEngine {
 
         let patterns = Self::build_patterns(settings, custom_patterns);
 
-        info!("🔍 Анонимизатор: {} паттернов, {} кастомных доменов",
+        info!("Anonymizer: {} patterns, {} custom domains",
             patterns.len(), settings.custom_known_domains.len());
 
         Self {
@@ -63,7 +63,7 @@ impl AnonymizerEngine {
                     let domain_value = mat.as_str();
                     let clean_domain = self.extract_domain_from_match(domain_value);
                     if is_known_domain(&clean_domain, &self.custom_known_domains) {
-                        debug!("⏭️ Пропущен известный домен: {}", clean_domain);
+                        debug!("Skipping known domain: {}", clean_domain);
                         continue;
                     }
                 }
@@ -104,7 +104,7 @@ impl AnonymizerEngine {
         }
 
         info!(
-            "✅ Анонимизация завершена: найдено {} PII, стратегия: {:?}",
+            "Anonymization complete: {} PII found, strategy: {:?}",
             detected_pii.len(),
             strategy
         );
@@ -117,7 +117,7 @@ impl AnonymizerEngine {
         }
     }
 
-    /// Построение списка паттернов: встроенные (enabled) + кастомные
+    /// Build pattern list: built-in (enabled) + custom
     fn build_patterns(settings: &AnonymizerSettings, custom: Vec<PIIPattern>) -> Vec<PIIPattern> {
         let all_patterns = get_all_patterns();
         let enabled: HashSet<String> = settings.patterns.iter().cloned().collect();
@@ -159,7 +159,7 @@ impl AnonymizerEngine {
         }
     }
 
-    /// Обнаружение PII без замены
+    /// Detect PII without replacement
     pub fn detect_pii(&self, text: &str) -> Vec<DetectedPII> {
         let mut detected = Vec::new();
 
@@ -183,13 +183,13 @@ impl AnonymizerEngine {
             }
         }
 
-        debug!("🔍 Обнаружено {} PII в тексте", detected.len());
+        debug!("Detected {} PII in text", detected.len());
         detected
     }
 
-    /// Пакетная обработка
+    /// Batch processing
     pub fn anonymize_batch(&self, requests: &[AnonymizeRequest]) -> Vec<AnonymizeResponse> {
-        info!("📦 Пакетная обработка: {} запросов", requests.len());
+        info!("Batch request: {} items", requests.len());
         requests.iter().map(|req| self.anonymize(req)).collect()
     }
 }

@@ -1,47 +1,52 @@
 # PII Anonymizer MCP Server
 
-Сервис для анонимизации текста с удалением персональных данных (PII). HTTP REST API, MCP сервер, проксирование к внешним MCP серверам.
+Service for text anonymization with PII (Personally Identifiable Information) removal. HTTP REST API, MCP server, proxying to external MCP servers.
 
-## Возможности
+[🇷🇺 Русская документация](docs/README_ru.md)
 
-- **12 паттернов PII**: email, телефоны, паспорта, СНИЛС, ИНН, кредитные карты, API ключи, JWT, SSH ключи, IP, домены
-- **3 стратегии**: replace, mask, hash
+## Features
+
+- **12+ PII patterns**: email, phones, passports, SNILS, INN, credit cards, API keys, JWT, SSH keys, IPs, domains
+- **3 strategies**: replace, mask, hash
 - REST API + MCP Server + SSE transport
-- **MCP Proxy** — проксирование к любым внешним MCP серверам с выборочной анонимизацией
-- Docker готовность
+- **MCP Proxy** — proxy to any external MCP servers with selective anonymization
+- Custom regex patterns and known domains via config
+- Config validation (`--config-test`)
+- Docker ready
 
-## Быстрый старт
+## Quick Start
 
 ```bash
-cargo run                              # HTTP режим
-cargo run -- --mcp-mode stdio          # MCP stdio режим
+cargo run                              # HTTP mode
+cargo run -- --mcp-mode stdio          # MCP stdio mode
+cargo run -- --config-test             # Validate config (like nginx -t)
 docker compose up -d                   # Docker
 ```
 
-## Документация
+## Documentation
 
-| Раздел | Описание |
-|--------|----------|
-| [Конфигурация](docs/configuration.md) | Настройки, CLI, переменные окружения |
-| [REST API](docs/rest-api.md) | Endpoints, примеры запросов |
-| [MCP сервер](docs/mcp-server.md) | Инструменты, SSE transport, режимы запуска |
-| [MCP Proxy](docs/mcp-proxy.md) | Проксирование upstream серверов, выборочная анонимизация |
-| [Интеграции](docs/integrations.md) | AnythingLLM, GitHub MCP, SearXNG, VS Code, Claude |
-| [Стратегии](docs/strategies.md) | Replace, mask, hash — примеры и сравнение |
-| [PII паттерны](docs/patterns.md) | Полный список поддерживаемых PII |
-| [Кастомные паттерны](docs/custom-patterns.md) | Свои regex паттерны и домены |
-| [Развёртывание](docs/deployment.md) | Docker, переменные окружения, docker socket |
-| [Бенчмарки](docs/benchmarks.md) | Тесты производительности vs Presidio |
-| [Сравнение](COMPARISON.md) | Presidio, Scrubadub и другие |
+| Section | Description |
+|---------|-------------|
+| [Configuration](docs/configuration.md) ([🇷🇺](docs/configuration_ru.md)) | Settings, CLI, environment variables |
+| [REST API](docs/rest-api.md) ([🇷🇺](docs/rest-api_ru.md)) | Endpoints, request examples |
+| [MCP Server](docs/mcp-server.md) ([🇷🇺](docs/mcp-server_ru.md)) | Tools, SSE transport, launch modes |
+| [MCP Proxy](docs/mcp-proxy.md) ([🇷🇺](docs/mcp-proxy_ru.md)) | Upstream server proxy, selective anonymization |
+| [Integrations](docs/integrations.md) ([🇷🇺](docs/integrations_ru.md)) | AnythingLLM, GitHub MCP, SearXNG, VS Code, Claude |
+| [Strategies](docs/strategies.md) ([🇷🇺](docs/strategies_ru.md)) | Replace, mask, hash — examples and comparison |
+| [PII Patterns](docs/patterns.md) ([🇷🇺](docs/patterns_ru.md)) | Full list of supported PII |
+| [Custom Patterns](docs/custom-patterns.md) ([🇷🇺](docs/custom-patterns_ru.md)) | Custom regex patterns and domains |
+| [Deployment](docs/deployment.md) ([🇷🇺](docs/deployment_ru.md)) | Docker, environment variables, docker socket |
+| [Benchmarks](docs/benchmarks.md) ([🇷🇺](docs/benchmarks_ru.md)) | Performance tests vs Presidio |
+| [Comparison](COMPARISON.md) | Presidio, Scrubadub and others |
 
-## Тестирование
+## Testing
 
 ```bash
 cargo test
 ```
 
-**Статус**: 80+ тестов проходят успешно
+**Status**: 80+ tests passing
 
-## Лицензия
+## License
 
 MIT

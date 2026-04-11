@@ -1,14 +1,14 @@
-# Кастомные паттерны и домены
+# Custom Patterns and Domains
 
-PII Anonymizer позволяет добавлять собственные regex-паттерны для обнаружения PII и настраивать список известных доменов, которые не нужно маскировать.
+PII Anonymizer allows you to add custom regex patterns for PII detection and configure a list of known domains that should not be masked.
 
-## Как это работает
+## How it works
 
-Все настройки читаются **один раз при запуске** сервиса из файла `config/settings.yaml`. Для применения изменений **перезапустите сервис**.
+All settings are read **once at startup** from `config/settings.yaml`. To apply changes, **restart the service**.
 
-## Кастомные PII паттерны
+## Custom PII Patterns
 
-Добавьте свои regex-паттерны в секцию `custom_patterns`:
+Add your own regex patterns to the `custom_patterns` section:
 
 ```yaml
 custom_patterns:
@@ -23,49 +23,49 @@ custom_patterns:
     confidence: 0.85
 ```
 
-### Поля паттерна
+### Pattern Fields
 
-| Поле | Тип | Описание |
-|------|-----|----------|
-| `name` | string | Уникальное имя паттерна |
-| `pii_type` | string | Тип PII: `email`, `phone`, `passport`, `credit_card`, `ip_address`, `snils`, `inn`, `address`, `full_name`, `api_key`, `access_token`, `ssh_key`, `domain`, `unknown` |
-| `pattern` | string | Regex паттерн (экранируйте `\` как `\\`) |
-| `confidence` | float | Уровень уверенности 0.0–1.0 (по умолчанию 0.85) |
+| Field | Type | Description |
+|-------|------|-------------|
+| `name` | string | Unique pattern name |
+| `pii_type` | string | PII type: `email`, `phone`, `passport`, `credit_card`, `ip_address`, `snils`, `inn`, `address`, `full_name`, `api_key`, `access_token`, `ssh_key`, `domain`, `unknown` |
+| `pattern` | string | Regex pattern (escape `\` as `\\`) |
+| `confidence` | float | Confidence level 0.0–1.0 (default: 0.85) |
 
-### Примеры кастомных паттернов
+### Custom Pattern Examples
 
-**Номер заказа:**
+**Order number:**
 ```yaml
 - name: "order_number"
   pii_type: "unknown"
   pattern: "\\bORD-\\d{6,}\\b"
   confidence: 0.9
 ```
-Текст: `Order ORD-123456 confirmed` → `Order [UNKNOWN_1] confirmed`
+Text: `Order ORD-123456 confirmed` → `Order [UNKNOWN_1] confirmed`
 
-**Внутренний ID сотрудника:**
+**Employee ID:**
 ```yaml
 - name: "employee_id"
   pii_type: "unknown"
   pattern: "\\bEMP-[A-Z]{2}-\\d{4}\\b"
   confidence: 0.85
 ```
-Текст: `Employee EMP-AB-1234 access granted` → `Employee [UNKNOWN_1] access granted`
+Text: `Employee EMP-AB-1234 access granted` → `Employee [UNKNOWN_1] access granted`
 
-**Лицензионный ключ:**
+**License key:**
 ```yaml
 - name: "license_key"
   pii_type: "api_key"
   pattern: "\\b[A-Z]{5}-[A-Z]{5}-[A-Z]{5}-[A-Z]{5}\\b"
   confidence: 0.9
 ```
-Текст: `Key: ABCDE-FGHIJ-KLMNO-PQRST` → `Key: ABC***ST`
+Text: `Key: ABCDE-FGHIJ-KLMNO-PQRST` → `Key: ABC***ST`
 
-## Кастомные известные домены
+## Custom Known Domains
 
-Домены из этого списка **не будут маскироваться**. Встроенные известные домены включают: google.com, yandex.ru, github.com и другие (см. `src/anonymizer/patterns.rs`).
+Domains in this list **will not be masked**. Built-in known domains include: google.com, yandex.ru, github.com, and others (see `src/anonymizer/patterns.rs`).
 
-Добавьте свои домены:
+Add your own domains:
 
 ```yaml
 custom_known_domains:
@@ -74,46 +74,46 @@ custom_known_domains:
   - "partner-site.ru"
 ```
 
-### Пример
+### Example
 
-**Без кастомного домена:**
+**Without custom domain:**
 ```
-Текст: Visit https://internal.corp/dashboard
-Результат: Visit https://in***rp/dashboard
+Text: Visit https://internal.corp/dashboard
+Result: Visit https://in***rp/dashboard
 ```
 
-**С кастомным доменом:**
+**With custom domain:**
 ```yaml
 custom_known_domains:
   - "internal.corp"
 ```
 ```
-Текст: Visit https://internal.corp/dashboard
-Результат: Visit https://internal.corp/dashboard  (не изменён)
+Text: Visit https://internal.corp/dashboard
+Result: Visit https://internal.corp/dashboard  (unchanged)
 ```
 
-## Встроенные паттерны
+## Built-in Patterns
 
-Список встроенных паттернов можно посмотреть в `src/anonymizer/patterns.rs`:
+List of built-in patterns from `src/anonymizer/patterns.rs`:
 
-| Имя | Тип | Описание |
-|-----|-----|----------|
-| `email` | email | Email адреса |
-| `phone_ru` | phone | Российские телефоны |
-| `phone_intl` | phone | Международные телефоны |
-| `passport_ru` | passport | Паспорта РФ |
-| `credit_card` | credit_card | Кредитные карты |
-| `ip_address` | ip_address | IP адреса |
-| `snils` | snils | СНИЛС |
-| `api_key_aws` | api_key | AWS ключи |
-| `api_key_github` | api_key | GitHub токены |
-| `api_key_google` | api_key | Google API ключи |
-| `access_token_jwt` | access_token | JWT токены |
-| `ssh_key_rsa` | ssh_key | RSA SSH ключи |
-| `ssh_key_ed25519` | ssh_key | ED25519 SSH ключи |
-| `domain_unknown` | domain | Неизвестные домены |
+| Name | Type | Description |
+|------|------|-------------|
+| `email` | email | Email addresses |
+| `phone_ru` | phone | Russian phone numbers |
+| `phone_intl` | phone | International phone numbers |
+| `passport_ru` | passport | Russian passports |
+| `credit_card` | credit_card | Credit card numbers |
+| `ip_address` | ip_address | IP addresses |
+| `snils` | snils | Russian SNILS |
+| `api_key_aws` | api_key | AWS access keys |
+| `api_key_github` | api_key | GitHub tokens |
+| `api_key_google` | api_key | Google API keys |
+| `access_token_jwt` | access_token | JWT tokens |
+| `ssh_key_rsa` | ssh_key | RSA SSH keys |
+| `ssh_key_ed25519` | ssh_key | ED25519 SSH keys |
+| `domain_unknown` | domain | Unknown domains |
 
-## Полный пример конфигурации
+## Full Configuration Example
 
 ```yaml
 default_strategy: "mask"
@@ -138,14 +138,14 @@ custom_known_domains:
   - "internal.corp"
 ```
 
-## Ошибки валидации
+## Validation Errors
 
-Если regex паттерн невалидный, сервис **пропустит его** с предупреждением в логах и продолжит работу:
+If a regex pattern is invalid, the service **will skip it** with a warning in the logs and continue running:
 
 ```
-⚠️ Пропущен кастомный паттерн 'bad_regex': Невалидный regex: regex parse error
+⚠️ Skipping custom pattern 'bad_regex': regex parse error
 ```
 
 ---
 
-*Документация: 11 апреля 2026*
+*Documentation: April 11, 2026*

@@ -1,39 +1,39 @@
-# Стратегии маскирования
+# Masking Strategies
 
-## Replace — полная замена
+## Replace -- Full Replacement
 
 ```
 Input:  "Email: john@test.com, AWS Key: AKIAIOSFODNN7EXAMPLE"
 Output: "Email: [EMAIL_1], AWS Key: [API_KEY_2]"
 ```
 
-**Плюсы**: Полная анонимность, легко подсчитать PII
-**Минусы**: Теряется контекст данных
+**Pros**: Full anonymity, easy to count PII occurrences
+**Cons**: Data context is lost
 
-## Mask — частичная маска
-
-```
-Email:    "john.doe@company.org"  →  "jo***@***rg"
-Phone:    "+7 (999) 123-45-67"    →  "+79***67"
-API Key:  "AKIAIOSFODNN7EXAMPLE"  →  "AKIA***MPLE"
-Domain:   "secret-server.ru"      →  "sec***.ru"
-```
-
-**Плюсы**: Сохраняется формат данных
-**Минусы**: Частичное раскрытие информации
-
-## Hash — частичный хеш
+## Mask -- Partial Masking
 
 ```
-Email:    "john.doe@company.org"  →  "jo_4f2a8b1c@om"
-Phone:    "+7 (999) 123-45-67"    →  "+79_8e3f2a1d67"
-API Key:  "AKIAIOSFODNN7EXAMPLE"  →  "AKIA_4f2a8bMPLE"
+Email:    "john.doe@company.org"  ->  "jo***@***rg"
+Phone:    "+7 (999) 123-45-67"    ->  "+79***67"
+API Key:  "AKIAIOSFODNN7EXAMPLE"  ->  "AKIA***MPLE"
+Domain:   "secret-server.ru"      ->  "sec***.ru"
 ```
 
-**Плюсы**: Необратимость, сохраняется структура
-**Минусы**: Хеш может быть подобран перебором для коротких значений
+**Pros**: Data format is preserved
+**Cons**: Partial information disclosure
 
-## Примеры API ключей и токенов
+## Hash -- Partial Hash
+
+```
+Email:    "john.doe@company.org"  ->  "jo_4f2a8b1c@om"
+Phone:    "+7 (999) 123-45-67"    ->  "+79_8e3f2a1d67"
+API Key:  "AKIAIOSFODNN7EXAMPLE"  ->  "AKIA_4f2a8bMPLE"
+```
+
+**Pros**: Irreversible, structure is preserved
+**Cons**: Hash can be brute-forced for short values
+
+## API Keys and Tokens Examples
 
 ### AWS
 ```
@@ -54,15 +54,15 @@ Input:  "Bearer eyJhbGciOiJIUzI1NiIs..."
 Mask:   "Bearer eyJ_***..."
 ```
 
-### SSH ключи
+### SSH Keys
 ```
 Input:  "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDVvvHkGphJbBX8"
 Mask:   "ssh-rsa AAAA***BX8"
 ```
 
-### Домены (с фильтрацией)
+### Domains (with filtering)
 ```
 Input:  "Search on google.com or visit secret-server.ru"
 Output: "Search on google.com or visit secr***.ru"
-# google.com пропущен — известный домен
+# google.com is skipped -- known domain
 ```

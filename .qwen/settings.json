@@ -52,7 +52,10 @@
       "Bash(chmod *)",
       "Bash(docker *)",
       "Bash(tee *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(do *)",
+      "Bash(done)",
+      "Bash(sed *)"
     ]
   },
   "$version": 3

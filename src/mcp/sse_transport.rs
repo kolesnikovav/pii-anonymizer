@@ -100,7 +100,7 @@ impl SseServerState {
             initialized: false,
         });
 
-        info!("📡 Новая SSE сессия: {}", session_id);
+        info!("📡 New SSE session: {}", session_id);
         (session_id, rx)
     }
 
@@ -133,7 +133,7 @@ impl SseServerState {
             return self.handle_notification(session_id, notification).await;
         }
 
-        warn!("⚠️ Неизвестный формат сообщения от {}", session_id);
+        warn!("⚠️ Unknown message format from {}", session_id);
         Ok(())
     }
 
@@ -147,7 +147,7 @@ impl SseServerState {
             "tools/call" => self.handle_tools_call(session_id, request.id, request.params).await,
             "ping" => self.handle_ping(session_id, request.id).await,
             _ => {
-                warn!("⚠️ Неизвестный метод: {}", request.method);
+                warn!("⚠️ Unknown method: {}", request.method);
                 self.send_response(session_id, JsonRpcResponse {
                     jsonrpc: "2.0".to_string(),
                     id: request.id,
@@ -174,7 +174,7 @@ impl SseServerState {
                 Ok(())
             }
             _ => {
-                warn!("⚠️ Неизвестная нотификация: {}", notification.method);
+                warn!("⚠️ Unknown notification: {}", notification.method);
                 Ok(())
             }
         }
@@ -207,7 +207,7 @@ impl SseServerState {
 
     /// Tools List
     async fn handle_tools_list(&self, session_id: &str, id: Option<u64>) -> Result<(), String> {
-        info!("📋 Tools List запрос от {}", session_id);
+        info!("📋 Tools List request from {}", session_id);
 
         let tools = self.service.all_tools().await;
         let tools_json: Vec<Value> = tools.iter().map(|t| {
@@ -218,7 +218,7 @@ impl SseServerState {
             })
         }).collect();
 
-        info!("📋 Возвращаю {} инструментов", tools_json.len());
+        info!("📋 Returning {} инструментов", tools_json.len());
 
         self.send_response(session_id, JsonRpcResponse {
             jsonrpc: "2.0".to_string(),
@@ -297,7 +297,7 @@ async fn sse_endpoint(
         .data(&endpoint_url)
         .retry(std::time::Duration::from_secs(3000));
 
-    info!("📡 SSE endpoint отправлен: {}", endpoint_url);
+    info!("📡 SSE endpoint sent: {}", endpoint_url);
 
     // Поток событий
     let stream = async_stream::stream! {
