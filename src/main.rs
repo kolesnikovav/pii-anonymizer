@@ -22,6 +22,10 @@ struct Args {
     #[arg(short, long, default_value = "config/settings.yaml")]
     config: String,
 
+    /// Проверка конфигурации и выход (аналог nginx -t)
+    #[arg(long)]
+    config_test: bool,
+
     /// Хост сервера (переопределяет конфиг)
     #[arg(long)]
     host: Option<String>,
@@ -65,6 +69,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     if let Some(ref strategy) = args.strategy {
         settings.anonymizer.default_strategy = strategy.clone();
+    }
+
+    // Проверка конфигурации (аналог nginx -t)
+    if args.config_test {
+        return run_config_test(&settings);
     }
 
     info!("⚙️  Настройки: {}:{}, стратегия: {}",
@@ -246,4 +255,100 @@ async fn shutdown_signal() {
     }
 
     tracing::info!("🛑 Получен сигнал завершения, graceful shutdown...");
+}
+
+/// Проверка конфигурации (аналог nginx -t)
+fn run_config_test(settings: &config::Settings) -> Result<(), Box<dyn std::error::Error>> {
+    let mut errors: Vec<String> = Vec::new();
+    let mut warnings: Vec<String> = Vec::new();
+
+    println!("🔍 Проверка конфигурации:");
+    println!();
+
+    // 1. Стратегия
+    match settings.anonymizer.default_strategy.as_str() {
+        "replace" | "mask" | "hash" => {
+            println!("  ✅ Стратегия: {}", settings.anonymizer.default_strategy);
+        }
+        other => {
+            errors.push(format!("Неизвестная стратегия '{}'. Допустимые: replace, mask, hash", other));
+        }
+    }
+
+    // 2. Встроенные паттерны
+    let builtin_patterns = anonymizer::patterns::get_all_patterns();
+    let enabled_names: std::collections::HashSet<String> = settings.anonymizer.patterns.iter().cloned().collect();
+    
+    for name in &enabled_names {
+        let found = builtin_patterns.iter().any(|p| &p.name == name);
+        if found {
+            println!("  ✅ Паттерн: {}", name);
+        } else {
+            warnings.push(format!("Встроенный паттерн '{}' не найден", name));
+        }
+    }
+
+    // 3. Кастомные паттерны
+    for cp in &settings.anonymizer.custom_patterns {
+        match anonymizer::patterns::PIIPattern::from_config(&cp.name, &cp.pii_type, &cp.pattern, cp.confidence) {
+            Ok(p) => {
+                println!("  ✅ Кастомный паттерн: {} ({}), confidence={:.2}", cp.name, p.pii_type, cp.confidence);
+            }
+            Err(e) => {
+                errors.push(format!("Кастомный паттерн '{}': {}", cp.name, e));
+            }
+        }
+    }
+
+    // 4. Кастомные домены
+    if !settings.anonymizer.custom_known_domains.is_empty() {
+        for domain in &settings.anonymizer.custom_known_domains {
+            if domain.is_empty() {
+                warnings.push("Пустой домен в custom_known_domains".to_string());
+            } else {
+                println!("  ✅ Домен (пропуск): {}", domain);
+            }
+        }
+    }
+
+    // 5. Proxy upstream серверы
+    for (name, config) in &settings.proxy.upstream_servers {
+        if config.enabled {
+            let transport_str = match config.transport {
+                mcp::client::McpTransport::Stdio => "stdio",
+                mcp::client::McpTransport::Http => "http",
+            };
+            println!("  ✅ Proxy сервер: {} ({})", name, transport_str);
+        }
+    }
+
+    // 6. Server
+    println!("  ✅ Сервер: {}:{}", settings.server.host, settings.server.port);
+
+    println!();
+
+    // Итог
+    if errors.is_empty() && warnings.is_empty() {
+        println!("✅ Конфигурация валидна");
+        Ok(())
+    } else {
+        if !warnings.is_empty() {
+            println!("⚠️  Предупреждения ({}):", warnings.len());
+            for w in &warnings {
+                println!("   ⚠️  {}", w);
+            }
+            println!();
+        }
+        if !errors.is_empty() {
+            println!("❌ Ошибки ({}):", errors.len());
+            for e in &errors {
+                println!("   ❌ {}", e);
+            }
+            println!();
+            println!("❌ Конфигурация невалидна");
+            return Err(format!("{} ошибок конфигурации", errors.len()).into());
+        }
+        println!("⚠️  Конфигурация валидна с предупреждениями");
+        Ok(())
+    }
 }
