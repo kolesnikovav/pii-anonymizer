@@ -104,3 +104,22 @@ chmod +x pii-anonymizer-v0.2.0-x86_64-linux
 |-----|----------|
 | `latest` | Последний релиз |
 | `0.2.0` | Конкретная версия |
+
+## Поддерживаемые архитектуры
+
+| Архитектура | Платформа | Пример |
+|-------------|-----------|--------|
+| `amd64` | x86_64 | Desktop, сервер |
+| `arm64` | AArch64 | Raspberry Pi 4/5, Apple Silicon |
+| `arm/v7` | ARMv7 | Raspberry Pi 2/3 |
+
+Docker автоматически выберет нужную архитектуру при `docker pull`:
+
+```bash
+# На Raspberry Pi:
+docker pull ghcr.io/<owner>/pii-anonymizer:0.2.0
+# автоматически скачается arm64 или arm/v7 образ
+
+# Проверить:
+docker inspect ghcr.io/<owner>/pii-anonymizer:0.2.0 | grep Architecture
+```

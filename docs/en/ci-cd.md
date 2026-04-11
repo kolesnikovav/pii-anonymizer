@@ -104,3 +104,22 @@ The `.deb` package is built using [cargo-deb](https://github.com/kornelski/cargo
 |-----|-------------|
 | `latest` | Latest release |
 | `0.2.0` | Specific version |
+
+## Supported Architectures
+
+| Architecture | Platform | Example |
+|-------------|----------|---------|
+| `amd64` | x86_64 | Desktop, server |
+| `arm64` | AArch64 | Raspberry Pi 4/5, Apple Silicon |
+| `arm/v7` | ARMv7 | Raspberry Pi 2/3 |
+
+Docker автоматически выберет нужную архитектуру при `docker pull`:
+
+```bash
+# На Raspberry Pi:
+docker pull ghcr.io/<owner>/pii-anonymizer:0.2.0
+# автоматически скачается arm64 или arm/v7 образ
+
+# Проверить:
+docker inspect ghcr.io/<owner>/pii-anonymizer:0.2.0 | grep Architecture
+```
