@@ -13,5 +13,6 @@
 | [Развёртывание](deployment_ru.md) | Docker, переменные окружения, docker socket |
 | [Бенчмарки](benchmarks_ru.md) | Тесты производительности vs Presidio |
 | [Сравнение](comparison_ru.md) | Presidio, Scrubadub и другие |
+| [CI/CD](ci-cd_ru.md) | Пайплайн релизов, Docker, .deb пакеты |
 
 [🇬🇧 English documentation](../en/)

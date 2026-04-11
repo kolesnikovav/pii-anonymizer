@@ -59,3 +59,24 @@ async-stream = "0.3"
 [dev-dependencies]
 tokio-test = "0.4"
 axum-test = "14.0"
+
+# cargo-deb configuration for building .deb packages
+[package.metadata.deb]
+maintainer = "Aleks Kolesnikov"
+copyright = "2025, Aleks Kolesnikov"
+license-file = ["LICENSE", "0"]
+extended-description = """\
+PII Anonymizer MCP Server — service for text anonymization \
+with PII (Personally Identifiable Information) removal. \
+Supports REST API, MCP Server, and MCP Proxy."""
+section = "net"
+priority = "optional"
+depends = "$auto"
+assets = [
+    ["target/release/pii-anonymizer", "usr/local/bin/", "755"],
+    ["config/settings.yaml", "etc/pii-anonymizer/settings.yaml", "644"],
+    ["README.md", "usr/share/doc/pii-anonymizer/README.md", "644"],
+    ["debian/pii-anonymizer.service", "lib/systemd/system/pii-anonymizer.service", "644"],
+]
+conf-files = ["/etc/pii-anonymizer/settings.yaml"]
+maintainer-scripts = "debian/"

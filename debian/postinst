@@ -1,0 +1,12 @@
+#!/bin/bash
+set -e
+
+if [ "$1" = "configure" ]; then
+    systemctl daemon-reload
+    systemctl enable pii-anonymizer
+    echo ""
+    echo "PII Anonymizer installed."
+    echo "Config: /etc/pii-anonymizer/settings.yaml"
+    echo "Start:  systemctl start pii-anonymizer"
+    echo "Status: systemctl status pii-anonymizer"
+fi

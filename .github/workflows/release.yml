@@ -1,0 +1,268 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g. 0.2.0)'
+        required: true
+        type: string
+
+env:
+  CARGO_TERM_COLOR: always
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # ── Step 1: Tests ──
+  test:
+    name: Test & Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-action@stable
+
+      - name: Cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+      - name: Clippy
+        run: cargo clippy -- -D warnings
+
+      - name: Run tests
+        run: cargo test --lib
+
+  # ── Step 2: Build release binary ──
+  build-binary:
+    name: Build Binary
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-action@stable
+
+      - name: Cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build release
+        run: cargo build --release --locked
+
+      - name: Strip binary
+        run: strip target/release/pii-anonymizer
+
+      - name: Get version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Rename binary
+        run: |
+          cp target/release/pii-anonymizer pii-anonymizer-v${{ steps.version.outputs.version }}-x86_64-linux
+
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: pii-anonymizer-bin
+          path: pii-anonymizer-v${{ steps.version.outputs.version }}-x86_64-linux
+          retention-days: 1
+
+  # ── Step 3: Build .deb package ──
+  build-deb:
+    name: Build .deb Package
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-action@stable
+
+      - name: Install cargo-deb
+        run: cargo install cargo-deb
+
+      - name: Cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build release
+        run: cargo build --release --locked
+
+      - name: Build .deb
+        run: cargo deb --no-build --no-strip
+
+      - name: Get version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Find .deb file
+        id: debfile
+        run: |
+          DEB_FILE=$(ls target/debian/pii-anonymizer_*.deb | head -1)
+          echo "path=$DEB_FILE" >> $GITHUB_OUTPUT
+          echo "Found: $DEB_FILE"
+
+      - name: Upload .deb
+        uses: actions/upload-artifact@v4
+        with:
+          name: pii-anonymizer-deb
+          path: ${{ steps.debfile.outputs.path }}
+          retention-days: 1
+
+  # ── Step 4: Build and push Docker image ──
+  build-docker:
+    name: Build & Push Docker Image
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ steps.version.outputs.version }}
+            type=raw,value=latest
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ── Step 5: Create GitHub Release ──
+  create-release:
+    name: Create GitHub Release
+    needs: [build-binary, build-deb, build-docker]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Download binary
+        uses: actions/download-artifact@v4
+        with:
+          name: pii-anonymizer-bin
+
+      - name: Download .deb
+        uses: actions/download-artifact@v4
+        with:
+          name: pii-anonymizer-deb
+
+      - name: Find .deb file
+        id: debpath
+        run: |
+          DEB_FILE=$(ls *.deb | head -1)
+          echo "path=$DEB_FILE" >> $GITHUB_OUTPUT
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          PREV_TAG=$(git tag --sort=-version:refname | grep -v "^v$" | sed -n '2p' || echo "")
+          if [ -z "$PREV_TAG" ]; then
+            echo "changelog=Initial release" >> $GITHUB_OUTPUT
+          else
+            LOG=$(git log --pretty=format:"- %s" $PREV_TAG..HEAD)
+            echo "changelog<<EOF" >> $GITHUB_OUTPUT
+            echo "$LOG" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: Release v${{ steps.version.outputs.version }}
+          body: |
+            ## Changelog
+
+            ${{ steps.changelog.outputs.changelog }}
+
+            ## Artifacts
+
+            - **Docker**: `ghcr.io/${{ github.repository }}:${{ steps.version.outputs.version }}`
+            - **Binary**: `pii-anonymizer-v${{ steps.version.outputs.version }}-x86_64-linux`
+            - **Debian**: `pii-anonymizer_${{ steps.version.outputs.version }}_amd64.deb`
+
+            ## Quick Start
+
+            ### Docker
+            ```bash
+            docker pull ghcr.io/${{ github.repository }}:${{ steps.version.outputs.version }}
+            docker run -p 3000:3000 ghcr.io/${{ github.repository }}:${{ steps.version.outputs.version }}
+            ```
+
+            ### Debian
+            ```bash
+            sudo dpkg -i pii-anonymizer_${{ steps.version.outputs.version }}_amd64.deb
+            ```
+
+            ### Binary
+            ```bash
+            chmod +x pii-anonymizer-v${{ steps.version.outputs.version }}-x86_64-linux
+            ./pii-anonymizer-v${{ steps.version.outputs.version }}-x86_64-linux
+            ```
+          files: |
+            pii-anonymizer-v${{ steps.version.outputs.version }}-x86_64-linux
+            ${{ steps.debpath.outputs.path }}
+          draft: false
+          prerelease: false
+          generate_release_notes: false

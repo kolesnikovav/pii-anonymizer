@@ -1,0 +1,11 @@
+[Unit]
+Description=PII Anonymizer MCP Server
+After=network.target
+
+[Service]
+ExecStart=/usr/local/bin/pii-anonymizer --config /etc/pii-anonymizer/settings.yaml
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

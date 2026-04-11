@@ -13,5 +13,6 @@
 | [Deployment](deployment.md) | Docker, environment variables, docker socket |
 | [Benchmarks](benchmarks.md) | Performance tests vs Presidio |
 | [Comparison](comparison.md) | Presidio, Scrubadub and others |
+| [CI/CD](ci-cd.md) | Release pipeline, Docker, .deb packages |
 
 [🇷🇺 Русская документация](../ru/)

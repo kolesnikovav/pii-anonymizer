@@ -39,6 +39,7 @@ docker compose up -d                   # Docker
 | [Deployment](docs/en/deployment.md) ([🇷🇺](docs/ru/deployment_ru.md)) | Docker, environment variables, docker socket |
 | [Benchmarks](docs/en/benchmarks.md) ([🇷🇺](docs/ru/benchmarks_ru.md)) | Performance tests vs Presidio |
 | [Comparison](docs/en/comparison.md) ([🇷🇺](docs/ru/comparison_ru.md)) | Presidio, Scrubadub and others |
+| [CI/CD](docs/en/ci-cd.md) ([🇷🇺](docs/ru/ci-cd_ru.md)) | Release pipeline, Docker, .deb packages |
 
 ## Testing
 

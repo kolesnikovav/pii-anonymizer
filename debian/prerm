@@ -1,0 +1,7 @@
+#!/bin/bash
+set -e
+
+if [ "$1" = "remove" ] || [ "$1" = "deconfigure" ]; then
+    systemctl stop pii-anonymizer || true
+    systemctl disable pii-anonymizer || true
+fi
