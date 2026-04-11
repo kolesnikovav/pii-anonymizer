@@ -1,5 +1,12 @@
 # PII Anonymizer MCP Server
 
+[![Release](https://img.shields.io/github/v/release/kolesnikovav/pii-anonymizer?label=version&sort=semver&color=blue)](https://github.com/kolesnikovav/pii-anonymizer/releases)
+[![CI](https://img.shields.io/github/actions/workflow/status/kolesnikovav/pii-anonymizer/ci.yml?branch=master&label=CI)](https://github.com/kolesnikovav/pii-anonymizer/actions/workflows/ci.yml)
+[![License](https://img.shields.io/github/license/kolesnikovav/pii-anonymizer?color=green)](LICENSE)
+[![Rust](https://img.shields.io/badge/rust-1.75+-orange)](https://www.rust-lang.org/)
+[![Docker Pulls](https://img.shields.io/github/downloads/kolesnikovav/pii-anonymizer/total?label=downloads&color=9cf)](https://github.com/kolesnikovav/pii-anonymizer/releases)
+[![Stars](https://img.shields.io/github/stars/kolesnikovav/pii-anonymizer?style=flat&label=%E2%AD%90&color=yellow)](https://github.com/kolesnikovav/pii-anonymizer/stargazers)
+
 Service for text anonymization with PII (Personally Identifiable Information) removal. HTTP REST API, MCP server, proxying to external MCP servers.
 
 - [English documentation](docs/en/)
