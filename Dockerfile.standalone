@@ -1,0 +1,32 @@
+# Минимальный образ — берёт уже собранный бинарник
+FROM debian:bookworm-slim
+
+ARG TARGETARCH
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates curl \
+    && rm -rf /var/lib/apt/lists/* /var/cache/apt/*
+
+# Install Docker CLI for amd64 (useful for MCP proxy mode)
+RUN install -m 0755 -d /etc/apt/keyrings \
+    && curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc \
+    && chmod a+r /etc/apt/keyrings/docker.asc \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian \
+    $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends docker-ce-cli \
+    && rm -rf /var/lib/apt/lists/* /var/cache/apt/* || true
+
+WORKDIR /app
+
+COPY binary/pii-anonymizer /usr/local/bin/
+COPY config/settings.yaml /app/config/
+
+ENV RUST_LOG=info
+EXPOSE 3000
+EXPOSE 3001
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:3000/health/api/v1/health || exit 1
+
+CMD ["pii-anonymizer"]
