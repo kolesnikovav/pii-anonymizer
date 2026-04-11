@@ -49,7 +49,9 @@
       "Bash(docker stop *)",
       "Bash(mkdir *)",
       "Bash(cargo clean)",
-      "Bash(chmod *)"
+      "Bash(chmod *)",
+      "Bash(docker *)",
+      "Bash(tee *)"
     ]
   },
   "$version": 3

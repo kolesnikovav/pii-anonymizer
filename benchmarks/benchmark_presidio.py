@@ -60,55 +60,70 @@ def load_test_data():
     return texts
 
 
-def benchmark_presidio(presidio_url, texts):
+def benchmark_presidio(analyzer_url, anonymizer_url, texts):
     """Бенчмарк Presidio через HTTP API"""
     print("=== Presidio Benchmark ===")
     print(f"Текстов: {len(texts)}")
-    print(f"Presidio URL: {presidio_url}")
+    print(f"Analyzer URL: {analyzer_url}")
+    print(f"Anonymizer URL: {anonymizer_url}")
     print()
-    
+
     # Проверка доступности
     try:
-        response = requests.get(f"{presidio_url}/health", timeout=5)
+        response = requests.get(f"{analyzer_url}/health", timeout=5)
         if response.status_code != 200:
-            print(f"❌ Presidio не доступен (status: {response.status_code})")
+            print(f"❌ Presidio Analyzer не доступен (status: {response.status_code})")
             sys.exit(1)
     except requests.exceptions.RequestException as e:
-        print(f"❌ Presidio не доступен: {e}")
+        print(f"❌ Presidio Analyzer не доступен: {e}")
         sys.exit(1)
-    
+
+    try:
+        response = requests.get(f"{anonymizer_url}/health", timeout=5)
+        if response.status_code != 200:
+            print(f"❌ Presidio Anonymizer не доступен (status: {response.status_code})")
+            sys.exit(1)
+    except requests.exceptions.RequestException as e:
+        print(f"❌ Presidio Anonymizer не доступен: {e}")
+        sys.exit(1)
+
     print("✓ Presidio доступен")
     print("Запуск бенчмарка...")
     print()
-    
+
     # Бенчмарк
     start = time.time()
     success_count = 0
     error_count = 0
-    
+
     for i, text in enumerate(texts):
         try:
             # Анализ
             analyze_response = requests.post(
-                f"{presidio_url}/analyze",
+                f"{analyzer_url}/analyze",
                 json={"text": text, "language": "en"},
                 timeout=10
             )
-            
+
             if analyze_response.status_code == 200:
                 results = analyze_response.json()
-                
+
                 # Анонимизация
                 if results:
-                    anonymize_response = requests.post(
-                        f"{presidio_url}/anonymize",
-                        json={
-                            "text": text,
-                            "analyzer_results": results
+                    anonymize_payload = {
+                        "text": text,
+                        "anonymizers": {
+                            "DEFAULT": {"type": "replace", "new_value": "<ANONYMIZED>"}
                         },
+                        "analyzer_results": results
+                    }
+                    
+                    anonymize_response = requests.post(
+                        f"{anonymizer_url}/anonymize",
+                        json=anonymize_payload,
                         timeout=10
                     )
-                    
+
                     if anonymize_response.status_code == 200:
                         success_count += 1
                     else:
@@ -117,18 +132,18 @@ def benchmark_presidio(presidio_url, texts):
                     success_count += 1
             else:
                 error_count += 1
-                
+
         except Exception as e:
             error_count += 1
             print(f"Ошибка на тексте {i}: {e}")
-        
+
         if (i + 1) % 100 == 0:
             print(f"Обработано: {i + 1} текстов")
-    
+
     duration = time.time() - start
     total = len(texts)
     throughput = total / duration if duration > 0 else 0
-    
+
     print()
     print("=== Результаты ===")
     print(f"Всего текстов: {total}")
@@ -139,6 +154,7 @@ def benchmark_presidio(presidio_url, texts):
 
 
 if __name__ == "__main__":
-    presidio_url = sys.argv[1] if len(sys.argv) > 1 else "http://localhost:5002"
+    analyzer_url = sys.argv[1] if len(sys.argv) > 1 else "http://localhost:5001"
+    anonymizer_url = sys.argv[2] if len(sys.argv) > 2 else "http://localhost:5002"
     texts = load_test_data()
-    benchmark_presidio(presidio_url, texts)
+    benchmark_presidio(analyzer_url, anonymizer_url, texts)
