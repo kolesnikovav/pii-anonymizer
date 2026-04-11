@@ -12,5 +12,6 @@
 | [Custom Patterns](custom-patterns.md) | Custom regex patterns and domains |
 | [Deployment](deployment.md) | Docker, environment variables, docker socket |
 | [Benchmarks](benchmarks.md) | Performance tests vs Presidio |
+| [Comparison](comparison.md) | Presidio, Scrubadub and others |
 
 [🇷🇺 Русская документация](../ru/)

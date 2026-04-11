@@ -38,7 +38,7 @@ docker compose up -d                   # Docker
 | [Custom Patterns](docs/en/custom-patterns.md) ([🇷🇺](docs/ru/custom-patterns_ru.md)) | Custom regex patterns and domains |
 | [Deployment](docs/en/deployment.md) ([🇷🇺](docs/ru/deployment_ru.md)) | Docker, environment variables, docker socket |
 | [Benchmarks](docs/en/benchmarks.md) ([🇷🇺](docs/ru/benchmarks_ru.md)) | Performance tests vs Presidio |
-| [Comparison](COMPARISON.md) | Presidio, Scrubadub and others |
+| [Comparison](docs/en/comparison.md) ([🇷🇺](docs/ru/comparison_ru.md)) | Presidio, Scrubadub and others |
 
 ## Testing
 

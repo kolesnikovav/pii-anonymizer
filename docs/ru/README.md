@@ -12,5 +12,6 @@
 | [Кастомные паттерны](custom-patterns_ru.md) | Свои regex паттерны и домены |
 | [Развёртывание](deployment_ru.md) | Docker, переменные окружения, docker socket |
 | [Бенчмарки](benchmarks_ru.md) | Тесты производительности vs Presidio |
+| [Сравнение](comparison_ru.md) | Presidio, Scrubadub и другие |
 
 [🇬🇧 English documentation](../en/)
