@@ -55,7 +55,9 @@
       "Bash(git push *)",
       "Bash(do *)",
       "Bash(done)",
-      "Bash(sed *)"
+      "Bash(sed *)",
+      "Bash(git mv *)",
+      "Bash(continue)"
     ]
   },
   "$version": 3

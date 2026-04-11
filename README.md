@@ -2,7 +2,8 @@
 
 Service for text anonymization with PII (Personally Identifiable Information) removal. HTTP REST API, MCP server, proxying to external MCP servers.
 
-[🇷🇺 Русская документация](docs/README_ru.md)
+- [English documentation](docs/en/)
+- [Русская документация](docs/ru/)
 
 ## Features
 
@@ -27,16 +28,16 @@ docker compose up -d                   # Docker
 
 | Section | Description |
 |---------|-------------|
-| [Configuration](docs/configuration.md) ([🇷🇺](docs/configuration_ru.md)) | Settings, CLI, environment variables |
-| [REST API](docs/rest-api.md) ([🇷🇺](docs/rest-api_ru.md)) | Endpoints, request examples |
-| [MCP Server](docs/mcp-server.md) ([🇷🇺](docs/mcp-server_ru.md)) | Tools, SSE transport, launch modes |
-| [MCP Proxy](docs/mcp-proxy.md) ([🇷🇺](docs/mcp-proxy_ru.md)) | Upstream server proxy, selective anonymization |
-| [Integrations](docs/integrations.md) ([🇷🇺](docs/integrations_ru.md)) | AnythingLLM, GitHub MCP, SearXNG, VS Code, Claude |
-| [Strategies](docs/strategies.md) ([🇷🇺](docs/strategies_ru.md)) | Replace, mask, hash — examples and comparison |
-| [PII Patterns](docs/patterns.md) ([🇷🇺](docs/patterns_ru.md)) | Full list of supported PII |
-| [Custom Patterns](docs/custom-patterns.md) ([🇷🇺](docs/custom-patterns_ru.md)) | Custom regex patterns and domains |
-| [Deployment](docs/deployment.md) ([🇷🇺](docs/deployment_ru.md)) | Docker, environment variables, docker socket |
-| [Benchmarks](docs/benchmarks.md) ([🇷🇺](docs/benchmarks_ru.md)) | Performance tests vs Presidio |
+| [Configuration](docs/en/configuration.md) ([🇷🇺](docs/ru/configuration_ru.md)) | Settings, CLI, environment variables |
+| [REST API](docs/en/rest-api.md) ([🇷🇺](docs/ru/rest-api_ru.md)) | Endpoints, request examples |
+| [MCP Server](docs/en/mcp-server.md) ([🇷🇺](docs/ru/mcp-server_ru.md)) | Tools, SSE transport, launch modes |
+| [MCP Proxy](docs/en/mcp-proxy.md) ([🇷🇺](docs/ru/mcp-proxy_ru.md)) | Upstream server proxy, selective anonymization |
+| [Integrations](docs/en/integrations.md) ([🇷🇺](docs/ru/integrations_ru.md)) | AnythingLLM, GitHub MCP, SearXNG, VS Code, Claude |
+| [Strategies](docs/en/strategies.md) ([🇷🇺](docs/ru/strategies_ru.md)) | Replace, mask, hash — examples and comparison |
+| [PII Patterns](docs/en/patterns.md) ([🇷🇺](docs/ru/patterns_ru.md)) | Full list of supported PII |
+| [Custom Patterns](docs/en/custom-patterns.md) ([🇷🇺](docs/ru/custom-patterns_ru.md)) | Custom regex patterns and domains |
+| [Deployment](docs/en/deployment.md) ([🇷🇺](docs/ru/deployment_ru.md)) | Docker, environment variables, docker socket |
+| [Benchmarks](docs/en/benchmarks.md) ([🇷🇺](docs/ru/benchmarks_ru.md)) | Performance tests vs Presidio |
 | [Comparison](COMPARISON.md) | Presidio, Scrubadub and others |
 
 ## Testing
