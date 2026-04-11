@@ -164,31 +164,31 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Add arm64 target
-        run: rustup target add aarch64-unknown-linux-gnu
+        run: rustup target add aarch64-unknown-linux-musl
 
-      - name: Install cross linker and OpenSSL
+      - name: Install zig
         run: |
-          sudo dpkg --add-architecture arm64
-          sudo apt-get update
-          sudo apt-get install -y gcc-aarch64-linux-gnu libssl-dev:arm64
+          curl -L https://ziglang.org/download/0.13.0/zig-linux-x86_64-0.13.0.tar.xz | tar -xJ -C /opt
+          sudo ln -s /opt/zig-linux-x86_64-0.13.0/zig /usr/local/bin/zig
+          echo "/opt/zig-linux-x86_64-0.13.0" >> $GITHUB_PATH
+
+      - name: Install cargo-zigbuild
+        run: cargo install cargo-zigbuild
 
       - name: Cache
         uses: Swatinem/rust-cache@v2
 
       - name: Build release
-        run: |
-          PKG_CONFIG_PATH=/usr/lib/aarch64-linux-gnu/pkgconfig \
-          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc \
-          cargo build --release --locked --target aarch64-unknown-linux-gnu
+        run: cargo zigbuild --release --locked --target aarch64-unknown-linux-musl
 
       - name: Strip binary
-        run: strip target/aarch64-unknown-linux-gnu/release/pii-anonymizer
+        run: strip target/aarch64-unknown-linux-musl/release/pii-anonymizer || true
 
       - name: Upload binary
         uses: actions/upload-artifact@v4
         with:
           name: pii-anonymizer-arm64
-          path: target/aarch64-unknown-linux-gnu/release/pii-anonymizer
+          path: target/aarch64-unknown-linux-musl/release/pii-anonymizer
           retention-days: 1
 
   # ── Step 6: Build and push Docker images ──
