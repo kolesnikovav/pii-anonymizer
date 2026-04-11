@@ -30,6 +30,7 @@ docker compose up -d                   # Docker
 | [Стратегии](docs/strategies.md) | Replace, mask, hash — примеры и сравнение |
 | [PII паттерны](docs/patterns.md) | Полный список поддерживаемых PII |
 | [Развёртывание](docs/deployment.md) | Docker, переменные окружения, docker socket |
+| [Бенчмарки](docs/benchmarks.md) | Тесты производительности vs Presidio |
 | [Сравнение](COMPARISON.md) | Presidio, Scrubadub и другие |
 
 ## Тестирование

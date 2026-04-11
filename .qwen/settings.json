@@ -48,7 +48,8 @@
       "Bash(docker ps *)",
       "Bash(docker stop *)",
       "Bash(mkdir *)",
-      "Bash(cargo clean)"
+      "Bash(cargo clean)",
+      "Bash(chmod *)"
     ]
   },
   "$version": 3

@@ -9,6 +9,10 @@ authors = ["Aleks Kolesnikov"]
 name = "pii-anonymizer"
 path = "src/main.rs"
 
+[[bin]]
+name = "benchmark_pii_anonymizer"
+path = "benchmarks/benchmark_pii_anonymizer.rs"
+
 [lib]
 name = "pii_anonymizer"
 path = "src/lib.rs"
