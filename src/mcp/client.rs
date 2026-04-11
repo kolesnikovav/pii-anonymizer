@@ -19,7 +19,6 @@ pub enum McpTransport {
     Http,
 }
 
-
 /// Конфигурация внешнего MCP сервера
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ExternalMcpConfig {
@@ -105,13 +104,11 @@ impl ExternalMcpConfig {
 }
 
 /// Конфигурация прокси менеджера
-#[derive(Debug, Clone, Deserialize, Serialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Deserialize, Serialize, Default)]
 pub struct McpProxyConfig {
     #[serde(default)]
     pub upstream_servers: HashMap<String, ExternalMcpConfig>,
 }
-
 
 /// Инструмент от внешнего сервера
 #[derive(Clone, Debug)]

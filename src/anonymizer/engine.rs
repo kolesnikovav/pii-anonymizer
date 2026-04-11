@@ -57,7 +57,9 @@ impl AnonymizerEngine {
             .strategy
             .as_ref()
             .map(|s| AnonymizationStrategy::parse_strategy(s))
-            .unwrap_or_else(|| AnonymizationStrategy::parse_strategy(&self.settings.default_strategy));
+            .unwrap_or_else(|| {
+                AnonymizationStrategy::parse_strategy(&self.settings.default_strategy)
+            });
 
         let mut matches: Vec<(usize, usize, String, String)> = Vec::new();
         let mut pii_counters: std::collections::HashMap<String, usize> =
