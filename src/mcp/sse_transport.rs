@@ -1,15 +1,16 @@
 use axum::{
     extract::{Query, State},
     response::sse::{Event, Sse},
-    Json, Router, routing::{get, post},
+    routing::{get, post},
+    Json, Router,
 };
 use futures::Stream;
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value, Map};
+use serde_json::{json, Map, Value};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::{mpsc, RwLock};
-use tracing::{info, error, warn};
+use tracing::{error, info, warn};
 use uuid::Uuid;
 
 use crate::mcp::ProxyMcpService;
@@ -53,9 +54,8 @@ struct JsonRpcNotification {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-/// Сессия клиента
+// Сессия клиента
 // ═══════════════════════════════════════════════════════════════════
-
 struct ClientSession {
     /// Канал для отправки SSE событий клиенту
     tx: mpsc::Sender<String>,
@@ -95,10 +95,13 @@ impl SseServerState {
         let session_id = Uuid::new_v4().to_string().replace('-', "");
         let (tx, rx) = mpsc::channel(100);
 
-        self.sessions.write().await.insert(session_id.clone(), ClientSession {
-            tx,
-            initialized: false,
-        });
+        self.sessions.write().await.insert(
+            session_id.clone(),
+            ClientSession {
+                tx,
+                initialized: false,
+            },
+        );
 
         info!("📡 New SSE session: {}", session_id);
         (session_id, rx)
@@ -108,7 +111,10 @@ impl SseServerState {
     pub async fn send_to_client(&self, session_id: &str, message: &str) -> Result<(), String> {
         let sessions = self.sessions.read().await;
         if let Some(session) = sessions.get(session_id) {
-            session.tx.send(message.to_string()).await
+            session
+                .tx
+                .send(message.to_string())
+                .await
                 .map_err(|_| "Failed to send message".to_string())
         } else {
             Err("Session not found".to_string())
@@ -116,8 +122,13 @@ impl SseServerState {
     }
 
     /// Отправить JSON-RPC response клиенту
-    pub(crate) async fn send_response(&self, session_id: &str, response: JsonRpcResponse) -> Result<(), String> {
-        let data = serde_json::to_string(&response).map_err(|e| format!("Serialize error: {}", e))?;
+    pub(crate) async fn send_response(
+        &self,
+        session_id: &str,
+        response: JsonRpcResponse,
+    ) -> Result<(), String> {
+        let data =
+            serde_json::to_string(&response).map_err(|e| format!("Serialize error: {}", e))?;
         self.send_to_client(session_id, &data).await
     }
 
@@ -138,32 +149,55 @@ impl SseServerState {
     }
 
     /// Обработать JSON-RPC request
-    async fn handle_request(&self, session_id: &str, request: JsonRpcRequest) -> Result<(), String> {
-        info!("📨 {}.{} от {}", request.method, request.id.unwrap_or(0), session_id);
+    async fn handle_request(
+        &self,
+        session_id: &str,
+        request: JsonRpcRequest,
+    ) -> Result<(), String> {
+        info!(
+            "📨 {}.{} от {}",
+            request.method,
+            request.id.unwrap_or(0),
+            session_id
+        );
 
         match request.method.as_str() {
-            "initialize" => self.handle_initialize(session_id, request.id, request.params).await,
+            "initialize" => {
+                self.handle_initialize(session_id, request.id, request.params)
+                    .await
+            }
             "tools/list" => self.handle_tools_list(session_id, request.id).await,
-            "tools/call" => self.handle_tools_call(session_id, request.id, request.params).await,
+            "tools/call" => {
+                self.handle_tools_call(session_id, request.id, request.params)
+                    .await
+            }
             "ping" => self.handle_ping(session_id, request.id).await,
             _ => {
                 warn!("⚠️ Unknown method: {}", request.method);
-                self.send_response(session_id, JsonRpcResponse {
-                    jsonrpc: "2.0".to_string(),
-                    id: request.id,
-                    result: None,
-                    error: Some(JsonRpcError {
-                        code: -32601,
-                        message: format!("Method not found: {}", request.method),
-                        data: None,
-                    }),
-                }).await
+                self.send_response(
+                    session_id,
+                    JsonRpcResponse {
+                        jsonrpc: "2.0".to_string(),
+                        id: request.id,
+                        result: None,
+                        error: Some(JsonRpcError {
+                            code: -32601,
+                            message: format!("Method not found: {}", request.method),
+                            data: None,
+                        }),
+                    },
+                )
+                .await
             }
         }
     }
 
     /// Обработать notification
-    async fn handle_notification(&self, session_id: &str, notification: JsonRpcNotification) -> Result<(), String> {
+    async fn handle_notification(
+        &self,
+        session_id: &str,
+        notification: JsonRpcNotification,
+    ) -> Result<(), String> {
         match notification.method.as_str() {
             "notifications/initialized" => {
                 let mut sessions = self.sessions.write().await;
@@ -181,7 +215,12 @@ impl SseServerState {
     }
 
     /// MCP Initialize
-    async fn handle_initialize(&self, session_id: &str, id: Option<u64>, _params: Option<Value>) -> Result<(), String> {
+    async fn handle_initialize(
+        &self,
+        session_id: &str,
+        id: Option<u64>,
+        _params: Option<Value>,
+    ) -> Result<(), String> {
         info!("🔧 Initialize от {}", session_id);
 
         let result = json!({
@@ -197,12 +236,16 @@ impl SseServerState {
             }
         });
 
-        self.send_response(session_id, JsonRpcResponse {
-            jsonrpc: "2.0".to_string(),
-            id,
-            result: Some(result),
-            error: None,
-        }).await
+        self.send_response(
+            session_id,
+            JsonRpcResponse {
+                jsonrpc: "2.0".to_string(),
+                id,
+                result: Some(result),
+                error: None,
+            },
+        )
+        .await
     }
 
     /// Tools List
@@ -210,28 +253,43 @@ impl SseServerState {
         info!("📋 Tools List request from {}", session_id);
 
         let tools = self.service.all_tools().await;
-        let tools_json: Vec<Value> = tools.iter().map(|t| {
-            json!({
-                "name": t.name,
-                "description": t.description,
-                "inputSchema": t.input_schema
+        let tools_json: Vec<Value> = tools
+            .iter()
+            .map(|t| {
+                json!({
+                    "name": t.name,
+                    "description": t.description,
+                    "inputSchema": t.input_schema
+                })
             })
-        }).collect();
+            .collect();
 
         info!("📋 Returning {} инструментов", tools_json.len());
 
-        self.send_response(session_id, JsonRpcResponse {
-            jsonrpc: "2.0".to_string(),
-            id,
-            result: Some(json!({ "tools": tools_json })),
-            error: None,
-        }).await
+        self.send_response(
+            session_id,
+            JsonRpcResponse {
+                jsonrpc: "2.0".to_string(),
+                id,
+                result: Some(json!({ "tools": tools_json })),
+                error: None,
+            },
+        )
+        .await
     }
 
     /// Tools Call
-    async fn handle_tools_call(&self, session_id: &str, id: Option<u64>, params: Option<Value>) -> Result<(), String> {
+    async fn handle_tools_call(
+        &self,
+        session_id: &str,
+        id: Option<u64>,
+        params: Option<Value>,
+    ) -> Result<(), String> {
         let params = params.ok_or("Missing params")?;
-        let tool_name = params.get("name").and_then(|v| v.as_str()).ok_or("Missing tool name")?;
+        let tool_name = params
+            .get("name")
+            .and_then(|v| v.as_str())
+            .ok_or("Missing tool name")?;
         let arguments = params.get("arguments").cloned();
 
         info!("🔧 Вызов инструмента: {} от {}", tool_name, session_id);
@@ -246,42 +304,54 @@ impl SseServerState {
         match self.service.handle_call(tool_name, args_map).await {
             Ok(result) => {
                 info!("✅ Инструмент {} выполнен", tool_name);
-                self.send_response(session_id, JsonRpcResponse {
-                    jsonrpc: "2.0".to_string(),
-                    id,
-                    result: Some(json!(result)),
-                    error: None,
-                }).await
+                self.send_response(
+                    session_id,
+                    JsonRpcResponse {
+                        jsonrpc: "2.0".to_string(),
+                        id,
+                        result: Some(json!(result)),
+                        error: None,
+                    },
+                )
+                .await
             }
             Err(e) => {
                 error!("❌ Ошибка инструмента {}: {}", tool_name, e);
-                self.send_response(session_id, JsonRpcResponse {
-                    jsonrpc: "2.0".to_string(),
-                    id,
-                    result: None,
-                    error: Some(JsonRpcError {
-                        code: -32603,
-                        message: e,
-                        data: None,
-                    }),
-                }).await
+                self.send_response(
+                    session_id,
+                    JsonRpcResponse {
+                        jsonrpc: "2.0".to_string(),
+                        id,
+                        result: None,
+                        error: Some(JsonRpcError {
+                            code: -32603,
+                            message: e,
+                            data: None,
+                        }),
+                    },
+                )
+                .await
             }
         }
     }
 
     /// Ping
     async fn handle_ping(&self, session_id: &str, id: Option<u64>) -> Result<(), String> {
-        self.send_response(session_id, JsonRpcResponse {
-            jsonrpc: "2.0".to_string(),
-            id,
-            result: Some(json!({})),
-            error: None,
-        }).await
+        self.send_response(
+            session_id,
+            JsonRpcResponse {
+                jsonrpc: "2.0".to_string(),
+                id,
+                result: Some(json!({})),
+                error: None,
+            },
+        )
+        .await
     }
 }
 
 // ═══════════════════════════════════════════════════════════════════
-/// Axum handlers
+// Axum handlers
 // ═══════════════════════════════════════════════════════════════════
 
 /// SSE endpoint — возвращает поток событий
@@ -337,7 +407,7 @@ async fn message_endpoint(
 }
 
 // ═══════════════════════════════════════════════════════════════════
-/// Создание роутера
+// Создание роутера
 // ═══════════════════════════════════════════════════════════════════
 
 pub fn create_sse_router(service: ProxyMcpService) -> Router {

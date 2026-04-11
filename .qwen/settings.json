@@ -57,7 +57,10 @@
       "Bash(done)",
       "Bash(sed *)",
       "Bash(git mv *)",
-      "Bash(continue)"
+      "Bash(continue)",
+      "Bash(git tag *)",
+      "Bash(cargo fmt *)",
+      "Bash(cargo clippy *)"
     ]
   },
   "$version": 3

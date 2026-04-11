@@ -1,6 +1,6 @@
-use pii_anonymizer::config::{AnonymizerSettings, Settings, McpSettings, LoggingSettings};
 use pii_anonymizer::anonymizer::AnonymizerEngine;
 use pii_anonymizer::api::routes::create_router;
+use pii_anonymizer::config::{AnonymizerSettings, LoggingSettings, McpSettings, Settings};
 use pii_anonymizer::models::AnonymizeRequest;
 
 fn create_test_app() -> axum::Router {
@@ -35,7 +35,7 @@ fn create_test_app() -> axum::Router {
             format: "pretty".to_string(),
         },
     };
-    
+
     let anonymizer = AnonymizerEngine::new(&settings.anonymizer);
     create_router(settings, anonymizer)
 }
@@ -43,12 +43,12 @@ fn create_test_app() -> axum::Router {
 #[tokio::test]
 async fn test_health_check() {
     let app = create_test_app();
-    
+
     let response = axum_test::TestServer::new(app)
         .unwrap()
         .get("/api/v1/health")
         .await;
-    
+
     assert_eq!(response.status_code(), 200);
     let json: serde_json::Value = response.json();
     assert_eq!(json["status"], "healthy");
@@ -58,58 +58,64 @@ async fn test_health_check() {
 #[tokio::test]
 async fn test_anonymize_email() {
     let app = create_test_app();
-    
+
     let request = AnonymizeRequest {
         text: "Contact me at test@example.com".to_string(),
         strategy: None,
     };
-    
+
     let response = axum_test::TestServer::new(app)
         .unwrap()
         .post("/api/v1/anonymize")
         .json(&request)
         .await;
-    
+
     assert_eq!(response.status_code(), 200);
     let json: serde_json::Value = response.json();
-    assert!(!json["anonymized_text"].as_str().unwrap().contains("test@example.com"));
+    assert!(!json["anonymized_text"]
+        .as_str()
+        .unwrap()
+        .contains("test@example.com"));
     assert!(json["detected_pii"].as_array().unwrap().len() > 0);
 }
 
 #[tokio::test]
 async fn test_anonymize_with_strategy() {
     let app = create_test_app();
-    
+
     let request = AnonymizeRequest {
         text: "Email: user@test.com".to_string(),
         strategy: Some("replace".to_string()),
     };
-    
+
     let response = axum_test::TestServer::new(app)
         .unwrap()
         .post("/api/v1/anonymize")
         .json(&request)
         .await;
-    
+
     assert_eq!(response.status_code(), 200);
     let json: serde_json::Value = response.json();
-    assert!(json["anonymized_text"].as_str().unwrap().contains("[EMAIL_"));
+    assert!(json["anonymized_text"]
+        .as_str()
+        .unwrap()
+        .contains("[EMAIL_"));
 }
 
 #[tokio::test]
 async fn test_detect_pii() {
     let app = create_test_app();
-    
+
     let request = serde_json::json!({
         "text": "Phone: +7 (999) 123-45-67"
     });
-    
+
     let response = axum_test::TestServer::new(app)
         .unwrap()
         .post("/api/v1/detect")
         .json(&request)
         .await;
-    
+
     assert_eq!(response.status_code(), 200);
     let json: serde_json::Value = response.json();
     assert!(json["total_found"].as_u64().unwrap() > 0);
@@ -118,18 +124,18 @@ async fn test_detect_pii() {
 #[tokio::test]
 async fn test_anonymize_empty_text() {
     let app = create_test_app();
-    
+
     let request = AnonymizeRequest {
         text: "".to_string(),
         strategy: None,
     };
-    
+
     let response = axum_test::TestServer::new(app)
         .unwrap()
         .post("/api/v1/anonymize")
         .json(&request)
         .await;
-    
+
     // Должна вернуться ошибка валидации
     assert_eq!(response.status_code(), 422);
 }
@@ -137,18 +143,18 @@ async fn test_anonymize_empty_text() {
 #[tokio::test]
 async fn test_no_pii_found() {
     let app = create_test_app();
-    
+
     let request = AnonymizeRequest {
         text: "Hello world, this is a test".to_string(),
         strategy: None,
     };
-    
+
     let response = axum_test::TestServer::new(app)
         .unwrap()
         .post("/api/v1/anonymize")
         .json(&request)
         .await;
-    
+
     assert_eq!(response.status_code(), 200);
     let json: serde_json::Value = response.json();
     assert_eq!(json["anonymized_text"], "Hello world, this is a test");

@@ -1,8 +1,7 @@
-use rmcp::model::{
-    CallToolRequestParam, CallToolResult, Content, PaginatedRequestParamInner,
-    ServerInfo, Tool,
-};
 use rmcp::handler::server::ServerHandler;
+use rmcp::model::{
+    CallToolRequestParam, CallToolResult, Content, PaginatedRequestParamInner, ServerInfo, Tool,
+};
 use rmcp::service::RequestContext;
 use rmcp::RoleServer;
 use std::sync::Arc;
@@ -45,13 +44,18 @@ impl ProxyMcpService {
             "required": ["text"]
         }).as_object().unwrap().clone());
 
-        let detect_pii_schema = std::sync::Arc::new(serde_json::json!({
-            "type": "object",
-            "properties": {
-                "text": { "type": "string", "description": "Текст для анализа" }
-            },
-            "required": ["text"]
-        }).as_object().unwrap().clone());
+        let detect_pii_schema = std::sync::Arc::new(
+            serde_json::json!({
+                "type": "object",
+                "properties": {
+                    "text": { "type": "string", "description": "Текст для анализа" }
+                },
+                "required": ["text"]
+            })
+            .as_object()
+            .unwrap()
+            .clone(),
+        );
 
         let batch_schema = std::sync::Arc::new(serde_json::json!({
             "type": "object",
@@ -91,9 +95,14 @@ impl ProxyMcpService {
                     }
                     std::sync::Arc::new(m)
                 } else {
-                    std::sync::Arc::new(serde_json::json!({"type": "object"}).as_object().unwrap().clone())
+                    std::sync::Arc::new(
+                        serde_json::json!({"type": "object"})
+                            .as_object()
+                            .unwrap()
+                            .clone(),
+                    )
                 };
-                
+
                 tools.push(Tool {
                     name: tool.name.into(),
                     description: tool.description.unwrap_or_default().into(),
@@ -130,9 +139,14 @@ impl ProxyMcpService {
             .and_then(|v| v.as_str())
             .ok_or("Missing 'text' field")?
             .to_string();
-        let strategy = args.get("strategy").and_then(|v| v.as_str()).map(|s| s.to_string());
+        let strategy = args
+            .get("strategy")
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string());
 
-        let result = self.engine.anonymize(&crate::models::AnonymizeRequest { text, strategy });
+        let result = self
+            .engine
+            .anonymize(&crate::models::AnonymizeRequest { text, strategy });
         let json = serde_json::to_string(&result).map_err(|e| format!("Serialize: {}", e))?;
 
         Ok(CallToolResult {
@@ -164,7 +178,9 @@ impl ProxyMcpService {
         });
 
         Ok(CallToolResult {
-            content: vec![Content::text(serde_json::to_string(&result).unwrap_or_default())],
+            content: vec![Content::text(
+                serde_json::to_string(&result).unwrap_or_default(),
+            )],
             is_error: None,
         })
     }
@@ -181,7 +197,10 @@ impl ProxyMcpService {
             .iter()
             .filter_map(|v| v.as_str().map(|s| s.to_string()))
             .collect::<Vec<_>>();
-        let strategy = args.get("strategy").and_then(|v| v.as_str()).map(|s| s.to_string());
+        let strategy = args
+            .get("strategy")
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string());
 
         let requests: Vec<_> = texts
             .iter()
@@ -194,7 +213,9 @@ impl ProxyMcpService {
         let result = serde_json::json!({ "processed": results.len() });
 
         Ok(CallToolResult {
-            content: vec![Content::text(serde_json::to_string(&result).unwrap_or_default())],
+            content: vec![Content::text(
+                serde_json::to_string(&result).unwrap_or_default(),
+            )],
             is_error: None,
         })
     }
@@ -205,13 +226,17 @@ impl ProxyMcpService {
         arguments: Option<serde_json::Map<String, serde_json::Value>>,
     ) -> Result<CallToolResult, String> {
         let proxy = self.proxy.read().await;
-        let proxy = proxy.as_ref().ok_or_else(|| format!("Unknown tool: {}", tool_name))?;
+        let proxy = proxy
+            .as_ref()
+            .ok_or_else(|| format!("Unknown tool: {}", tool_name))?;
 
         let args = serde_json::Value::Object(arguments.unwrap_or_default());
         let result = proxy.call_tool(tool_name, args).await?;
 
         Ok(CallToolResult {
-            content: vec![Content::text(serde_json::to_string(&result).unwrap_or_default())],
+            content: vec![Content::text(
+                serde_json::to_string(&result).unwrap_or_default(),
+            )],
             is_error: None,
         })
     }
@@ -225,8 +250,7 @@ impl ServerHandler for ProxyMcpService {
     fn get_info(&self) -> ServerInfo {
         ServerInfo {
             instructions: Some(
-                "PII Anonymizer MCP Server с проксированием внешних MCP серверов."
-                    .into(),
+                "PII Anonymizer MCP Server с проксированием внешних MCP серверов.".into(),
             ),
             ..Default::default()
         }
@@ -238,7 +262,10 @@ impl ServerHandler for ProxyMcpService {
         _context: RequestContext<RoleServer>,
     ) -> Result<rmcp::model::ListToolsResult, rmcp::model::ErrorData> {
         let tools = self.all_tools().await;
-        Ok(rmcp::model::ListToolsResult { tools, next_cursor: None })
+        Ok(rmcp::model::ListToolsResult {
+            tools,
+            next_cursor: None,
+        })
     }
 
     async fn call_tool(

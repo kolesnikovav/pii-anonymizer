@@ -10,10 +10,10 @@ use tracing::error;
 pub enum AppError {
     #[error("Validation error: {0}")]
     ValidationError(String),
-    
+
     #[error("Internal server error: {0}")]
     InternalError(String),
-    
+
     #[error("Bad request: {0}")]
     BadRequest(String),
 }
@@ -28,8 +28,12 @@ pub struct ErrorResponse {
 impl IntoResponse for AppError {
     fn into_response(self) -> axum::response::Response {
         let (status_code, error_type, message) = match &self {
-            AppError::ValidationError(msg) => (StatusCode::UNPROCESSABLE_ENTITY, "VALIDATION_ERROR", msg),
-            AppError::InternalError(msg) => (StatusCode::INTERNAL_SERVER_ERROR, "INTERNAL_ERROR", msg),
+            AppError::ValidationError(msg) => {
+                (StatusCode::UNPROCESSABLE_ENTITY, "VALIDATION_ERROR", msg)
+            }
+            AppError::InternalError(msg) => {
+                (StatusCode::INTERNAL_SERVER_ERROR, "INTERNAL_ERROR", msg)
+            }
             AppError::BadRequest(msg) => (StatusCode::BAD_REQUEST, "BAD_REQUEST", msg),
         };
 

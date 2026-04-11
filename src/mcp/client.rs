@@ -10,18 +10,15 @@ use tracing::info;
 /// Тип транспорта для MCP сервера
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "lowercase")]
+#[derive(Default)]
 pub enum McpTransport {
     /// stdio — subprocess (локальный запуск)
+    #[default]
     Stdio,
     /// HTTP/SSE — удалённое подключение
     Http,
 }
 
-impl Default for McpTransport {
-    fn default() -> Self {
-        Self::Stdio
-    }
-}
 
 /// Конфигурация внешнего MCP сервера
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -60,7 +57,9 @@ pub struct ExternalMcpConfig {
     pub anonymize_fields: HashMap<String, Vec<String>>,
 }
 
-fn default_enabled() -> bool { true }
+fn default_enabled() -> bool {
+    true
+}
 
 impl ExternalMcpConfig {
     pub fn stdio(command: String) -> Self {
@@ -107,16 +106,12 @@ impl ExternalMcpConfig {
 
 /// Конфигурация прокси менеджера
 #[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Default)]
 pub struct McpProxyConfig {
     #[serde(default)]
     pub upstream_servers: HashMap<String, ExternalMcpConfig>,
 }
 
-impl Default for McpProxyConfig {
-    fn default() -> Self {
-        Self { upstream_servers: HashMap::new() }
-    }
-}
 
 /// Инструмент от внешнего сервера
 #[derive(Clone, Debug)]
@@ -157,26 +152,48 @@ pub(crate) struct StdioConnection {
 }
 
 impl StdioConnection {
-    async fn send_request(&self, method: &str, params: serde_json::Value) -> Result<serde_json::Value, String> {
-        let id = { let mut id = self.request_id.lock().await; let c = *id; *id += 1; c };
+    async fn send_request(
+        &self,
+        method: &str,
+        params: serde_json::Value,
+    ) -> Result<serde_json::Value, String> {
+        let id = {
+            let mut id = self.request_id.lock().await;
+            let c = *id;
+            *id += 1;
+            c
+        };
 
         let request = JsonRpcRequest {
-            jsonrpc: "2.0".to_string(), id, method: method.to_string(), params,
+            jsonrpc: "2.0".to_string(),
+            id,
+            method: method.to_string(),
+            params,
         };
 
         let json = serde_json::to_string(&request).map_err(|e| format!("Serialize: {}", e))?;
         let mut stdin = self.stdin.lock().await;
-        stdin.write_all(format!("{}\n", json).as_bytes()).await.map_err(|e| format!("Write: {}", e))?;
+        stdin
+            .write_all(format!("{}\n", json).as_bytes())
+            .await
+            .map_err(|e| format!("Write: {}", e))?;
         stdin.flush().await.map_err(|e| format!("Flush: {}", e))?;
 
         let mut stdout = self.stdout.lock().await;
         let mut line = String::new();
         loop {
             line.clear();
-            let bytes = stdout.read_line(&mut line).await.map_err(|e| format!("Read: {}", e))?;
-            if bytes == 0 { return Err("Connection closed".to_string()); }
+            let bytes = stdout
+                .read_line(&mut line)
+                .await
+                .map_err(|e| format!("Read: {}", e))?;
+            if bytes == 0 {
+                return Err("Connection closed".to_string());
+            }
 
-            if line.trim().is_empty() { continue; }
+            if line.trim().is_empty() {
+                continue;
+            }
 
             if let Ok(response) = serde_json::from_str::<JsonRpcResponse>(line.trim()) {
                 if response.id == Some(id) {
@@ -191,9 +208,8 @@ impl StdioConnection {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-/// HTTP/SSE подключение (SSE endpoint + POST messages)
+// HTTP/SSE подключение (SSE endpoint + POST messages)
 // ═══════════════════════════════════════════════════════════════════════════
-
 pub(crate) struct HttpConnection {
     base_url: String,
     session_id: Arc<Mutex<Option<String>>>,
@@ -215,11 +231,17 @@ impl HttpConnection {
 
     async fn get_session_id(&self) -> Result<String, String> {
         let mut session = self.session_id.lock().await;
-        if session.is_some() { return Ok(session.as_ref().unwrap().clone()); }
+        if session.is_some() {
+            return Ok(session.as_ref().unwrap().clone());
+        }
 
         info!("   🔄 SSE подключение к {}/sse...", self.base_url);
-        let resp = self.client.get(&format!("{}/sse", self.base_url))
-            .send().await.map_err(|e| format!("SSE: {}", e))?;
+        let resp = self
+            .client
+            .get(format!("{}/sse", self.base_url))
+            .send()
+            .await
+            .map_err(|e| format!("SSE: {}", e))?;
         let body = resp.text().await.map_err(|e| format!("Read SSE: {}", e))?;
 
         if let Some(line) = body.lines().find(|l| l.starts_with("data: ")) {
@@ -233,26 +255,49 @@ impl HttpConnection {
         Err("Failed to get session ID".to_string())
     }
 
-    async fn send_request(&self, method: &str, params: serde_json::Value) -> Result<serde_json::Value, String> {
-        let id = { let mut id = self.request_id.lock().await; let c = *id; *id += 1; c };
+    async fn send_request(
+        &self,
+        method: &str,
+        params: serde_json::Value,
+    ) -> Result<serde_json::Value, String> {
+        let id = {
+            let mut id = self.request_id.lock().await;
+            let c = *id;
+            *id += 1;
+            c
+        };
         let session_id = self.get_session_id().await?;
 
         let request = JsonRpcRequest {
-            jsonrpc: "2.0".to_string(), id, method: method.to_string(), params,
+            jsonrpc: "2.0".to_string(),
+            id,
+            method: method.to_string(),
+            params,
         };
 
         let message_url = format!("{}/message?sessionId={}", self.base_url, session_id);
         info!("   📡 {} → {}", method, message_url);
 
-        let mut req = self.client.post(&message_url).header("Content-Type", "application/json");
-        for (k, v) in &self.headers { req = req.header(k, v); }
+        let mut req = self
+            .client
+            .post(&message_url)
+            .header("Content-Type", "application/json");
+        for (k, v) in &self.headers {
+            req = req.header(k, v);
+        }
 
-        let resp = req.json(&request).send().await
+        let resp = req
+            .json(&request)
+            .send()
+            .await
             .map_err(|e| format!("HTTP: {}", e))?;
         let body = resp.text().await.map_err(|e| format!("Read: {}", e))?;
 
-        let json_str = body.lines().find(|l| l.starts_with("data: "))
-            .map(|l| l.trim_start_matches("data: ")).unwrap_or(&body);
+        let json_str = body
+            .lines()
+            .find(|l| l.starts_with("data: "))
+            .map(|l| l.trim_start_matches("data: "))
+            .unwrap_or(&body);
 
         let result: serde_json::Value = serde_json::from_str(json_str)
             .map_err(|e| format!("Parse: {} from: {}", e, json_str))?;
@@ -260,21 +305,27 @@ impl HttpConnection {
         if let Some(err) = result.get("error") {
             return Err(format!("MCP error: {}", err));
         }
-        result.get("result").cloned().ok_or("Empty result".to_string())
+        result
+            .get("result")
+            .cloned()
+            .ok_or("Empty result".to_string())
     }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-/// Универсальное подключение
+// Универсальное подключение
 // ═══════════════════════════════════════════════════════════════════════════
-
 pub(crate) enum Transport {
     Stdio(StdioConnection),
     Http(HttpConnection),
 }
 
 impl Transport {
-    async fn send_request(&self, method: &str, params: serde_json::Value) -> Result<serde_json::Value, String> {
+    async fn send_request(
+        &self,
+        method: &str,
+        params: serde_json::Value,
+    ) -> Result<serde_json::Value, String> {
         match self {
             Transport::Stdio(conn) => conn.send_request(method, params).await,
             Transport::Http(conn) => conn.send_request(method, params).await,
@@ -283,9 +334,8 @@ impl Transport {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-/// Подключение к внешнему MCP серверу
+// Подключение к внешнему MCP серверу
 // ═══════════════════════════════════════════════════════════════════════════
-
 pub struct McpUpstreamConnection {
     pub name: String,
     pub(crate) transport: Arc<Mutex<Transport>>,
@@ -294,7 +344,10 @@ pub struct McpUpstreamConnection {
 
 impl McpUpstreamConnection {
     pub async fn connect(name: String, config: &ExternalMcpConfig) -> Result<Self, String> {
-        info!("🔌 Подключение к MCP серверу: {} ({:?})", name, config.transport);
+        info!(
+            "🔌 Подключение к MCP серверу: {} ({:?})",
+            name, config.transport
+        );
 
         let transport = match config.transport {
             McpTransport::Stdio => Self::connect_stdio(&name, config).await?,
@@ -311,24 +364,39 @@ impl McpUpstreamConnection {
         conn.initialize().await?;
         conn.load_tools().await?;
 
-        info!("✅ Подключено к {}: {} инструментов", name, conn.tools.len());
-        for t in &conn.tools { info!("   └─ {}", t.name); }
+        info!(
+            "✅ Подключено к {}: {} инструментов",
+            name,
+            conn.tools.len()
+        );
+        for t in &conn.tools {
+            info!("   └─ {}", t.name);
+        }
 
         Ok(conn)
     }
 
     async fn connect_stdio(name: &str, config: &ExternalMcpConfig) -> Result<Transport, String> {
-        let command = config.command.as_ref()
+        let command = config
+            .command
+            .as_ref()
             .ok_or("Command required for stdio transport")?;
 
         info!("   Команда: {} {}", command, config.args.join(" "));
 
         let mut cmd = Command::new(command);
-        cmd.stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::piped()).kill_on_drop(true);
-        for (k, v) in &config.env { cmd.env(k, v); }
+        cmd.stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .kill_on_drop(true);
+        for (k, v) in &config.env {
+            cmd.env(k, v);
+        }
         cmd.args(&config.args);
 
-        let mut child = cmd.spawn().map_err(|e| format!("Spawn {}: {}", command, e))?;
+        let mut child = cmd
+            .spawn()
+            .map_err(|e| format!("Spawn {}: {}", command, e))?;
         let stdin = child.stdin.take().ok_or("No stdin")?;
         let stdout = child.stdout.take().ok_or("No stdout")?;
         let stderr = child.stderr.take().ok_or("No stderr")?;
@@ -365,7 +433,9 @@ impl McpUpstreamConnection {
     }
 
     async fn connect_http(_name: &str, config: &ExternalMcpConfig) -> Result<Transport, String> {
-        let url = config.url.as_ref()
+        let url = config
+            .url
+            .as_ref()
             .ok_or("URL required for http transport")?;
 
         info!("   URL: {}", url);
@@ -376,18 +446,26 @@ impl McpUpstreamConnection {
         )))
     }
 
-    async fn send_request(&self, method: &str, params: serde_json::Value) -> Result<serde_json::Value, String> {
+    async fn send_request(
+        &self,
+        method: &str,
+        params: serde_json::Value,
+    ) -> Result<serde_json::Value, String> {
         let t = self.transport.lock().await;
         t.send_request(method, params).await
     }
 
     async fn initialize(&mut self) -> Result<(), String> {
         info!("   Initializing MCP protocol...");
-        self.send_request("initialize", serde_json::json!({
-            "protocolVersion": "2024-11-05",
-            "capabilities": {},
-            "clientInfo": {"name": "pii-anonymizer", "version": "0.1.0"}
-        })).await?;
+        self.send_request(
+            "initialize",
+            serde_json::json!({
+                "protocolVersion": "2024-11-05",
+                "capabilities": {},
+                "clientInfo": {"name": "pii-anonymizer", "version": "0.1.0"}
+            }),
+        )
+        .await?;
 
         // Send initialized notification AFTER receiving initialize response
         let notification = serde_json::json!({
@@ -399,15 +477,23 @@ impl McpUpstreamConnection {
         match &*self.transport.lock().await {
             Transport::Stdio(conn) => {
                 let mut stdin = conn.stdin.lock().await;
-                stdin.write_all(format!("{}\n", json).as_bytes()).await
+                stdin
+                    .write_all(format!("{}\n", json).as_bytes())
+                    .await
                     .map_err(|e| format!("Write: {}", e))?;
                 stdin.flush().await.map_err(|e| format!("Flush: {}", e))?;
             }
             Transport::Http(conn) => {
-                let mut req = conn.client.post(&conn.base_url)
+                let mut req = conn
+                    .client
+                    .post(&conn.base_url)
                     .header("Content-Type", "application/json");
-                for (k, v) in &conn.headers { req = req.header(k, v); }
-                req.json(&notification).send().await
+                for (k, v) in &conn.headers {
+                    req = req.header(k, v);
+                }
+                req.json(&notification)
+                    .send()
+                    .await
                     .map_err(|e| format!("HTTP notification: {}", e))?;
             }
         }
@@ -417,18 +503,23 @@ impl McpUpstreamConnection {
     }
 
     async fn load_tools(&mut self) -> Result<(), String> {
-        let result = self.send_request("tools/list", serde_json::json!({})).await?;
+        let result = self
+            .send_request("tools/list", serde_json::json!({}))
+            .await?;
 
         if let Some(tools_arr) = result.get("tools").and_then(|t| t.as_array()) {
             for tool in tools_arr {
                 if let (Some(name), Some(schema)) = (
                     tool.get("name").and_then(|n| n.as_str()),
-                    tool.get("inputSchema")
+                    tool.get("inputSchema"),
                 ) {
                     self.tools.push(ExternalTool {
                         server_name: self.name.clone(),
                         name: name.to_string(),
-                        description: tool.get("description").and_then(|d| d.as_str()).map(|s| s.to_string()),
+                        description: tool
+                            .get("description")
+                            .and_then(|d| d.as_str())
+                            .map(|s| s.to_string()),
                         input_schema: schema.clone(),
                     });
                 }
@@ -438,13 +529,22 @@ impl McpUpstreamConnection {
         Ok(())
     }
 
-    pub async fn call_tool(&self, tool_name: &str, args: serde_json::Value) -> Result<serde_json::Value, String> {
+    pub async fn call_tool(
+        &self,
+        tool_name: &str,
+        args: serde_json::Value,
+    ) -> Result<serde_json::Value, String> {
         info!("📡 {}.{} → {:?}", self.name, tool_name, args);
 
-        let result = self.send_request("tools/call", serde_json::json!({
-            "name": tool_name,
-            "arguments": args
-        })).await?;
+        let result = self
+            .send_request(
+                "tools/call",
+                serde_json::json!({
+                    "name": tool_name,
+                    "arguments": args
+                }),
+            )
+            .await?;
 
         info!("✅ {}.{} выполнен", self.name, tool_name);
         Ok(result)
@@ -458,16 +558,18 @@ impl Drop for McpUpstreamConnection {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-/// Менеджер внешних MCP серверов
+// Менеджер внешних MCP серверов
 // ═══════════════════════════════════════════════════════════════════════════
-
 pub struct McpProxyManager {
     connections: Vec<McpUpstreamConnection>,
 }
 
 impl McpProxyManager {
     pub fn new(connections: Vec<McpUpstreamConnection>) -> Self {
-        info!("🌐 McpProxyManager создан с {} подключениями", connections.len());
+        info!(
+            "🌐 McpProxyManager создан с {} подключениями",
+            connections.len()
+        );
         for conn in &connections {
             info!("   └─ {} ({} tools)", conn.name, conn.tools.len());
         }
@@ -484,14 +586,22 @@ impl McpProxyManager {
         None
     }
 
-    pub async fn call_tool(&self, tool_name: &str, args: serde_json::Value) -> Result<serde_json::Value, String> {
-        let conn = self.find_connection(tool_name)
+    pub async fn call_tool(
+        &self,
+        tool_name: &str,
+        args: serde_json::Value,
+    ) -> Result<serde_json::Value, String> {
+        let conn = self
+            .find_connection(tool_name)
             .ok_or_else(|| format!("Tool '{}' not found in any upstream", tool_name))?;
 
         let prefix = format!("{}_", conn.name);
         let actual_tool = tool_name.strip_prefix(&prefix).unwrap_or(tool_name);
 
-        info!("🔄 Проксирование {} → {}.{}", tool_name, conn.name, actual_tool);
+        info!(
+            "🔄 Проксирование {} → {}.{}",
+            tool_name, conn.name, actual_tool
+        );
         conn.call_tool(actual_tool, args).await
     }
 
@@ -501,7 +611,11 @@ impl McpProxyManager {
             for tool in &conn.tools {
                 let mut t = tool.clone();
                 t.name = format!("{}_{}", conn.name, t.name);
-                t.description = Some(format!("[{}] {}", conn.name, t.description.as_deref().unwrap_or("")));
+                t.description = Some(format!(
+                    "[{}] {}",
+                    conn.name,
+                    t.description.as_deref().unwrap_or("")
+                ));
                 tools.push(t);
             }
         }

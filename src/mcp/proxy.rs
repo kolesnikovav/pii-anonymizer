@@ -24,7 +24,10 @@ pub struct AnonymizingProxy {
 
 impl AnonymizingProxy {
     pub fn new(proxy: McpProxyManager, engine: AnonymizerEngine) -> Self {
-        info!("🔒 AnonymizingProxy создан с {} серверами", proxy.server_names().len());
+        info!(
+            "🔒 AnonymizingProxy создан с {} серверами",
+            proxy.server_names().len()
+        );
         Self {
             proxy,
             engine,
@@ -34,25 +37,32 @@ impl AnonymizingProxy {
 
     /// Установить правила анонимизации для сервера
     pub fn set_rules(&mut self, server_name: String, rules: ServerAnonymizationRules) {
-        info!("📋 Anonymization rules for '{}': {} tools",
-            server_name, rules.tool_fields.len());
+        info!(
+            "📋 Anonymization rules for '{}': {} tools",
+            server_name,
+            rules.tool_fields.len()
+        );
         self.rules.insert(server_name, rules);
     }
 
     /// Вызвать инструмент с выборочной анонимизацией
-    pub async fn call_tool(&self, tool_name: &str, args: serde_json::Value) -> Result<serde_json::Value, String> {
+    pub async fn call_tool(
+        &self,
+        tool_name: &str,
+        args: serde_json::Value,
+    ) -> Result<serde_json::Value, String> {
         let strategy = self.find_rules_for_tool(tool_name);
 
         let (log_msg, anonymized_args) = match strategy {
-            AnonymizeStrategy::All => {
-                (String::from("все строки анонимизированы"), self.anonymize_all_strings(&args))
-            }
-            AnonymizeStrategy::None => {
-                (String::from("анонимизация отключена"), args.clone())
-            }
-            AnonymizeStrategy::Specific(ref fields) => {
-                (format!("анонимизированы поля: {:?}", fields), self.anonymize_fields(&args, fields))
-            }
+            AnonymizeStrategy::All => (
+                String::from("все строки анонимизированы"),
+                self.anonymize_all_strings(&args),
+            ),
+            AnonymizeStrategy::None => (String::from("анонимизация отключена"), args.clone()),
+            AnonymizeStrategy::Specific(ref fields) => (
+                format!("анонимизированы поля: {:?}", fields),
+                self.anonymize_fields(&args, fields),
+            ),
         };
 
         info!("🔒 {}: {}", tool_name, log_msg);
@@ -62,7 +72,7 @@ impl AnonymizingProxy {
     /// Найти правила для инструмента
     fn find_rules_for_tool(&self, tool_name: &str) -> AnonymizeStrategy {
         // Ищем правила во всех серверах
-        for (_server_name, rules) in &self.rules {
+        for rules in self.rules.values() {
             if let Some(fields) = rules.tool_fields.get(tool_name) {
                 if fields.is_empty() {
                     return AnonymizeStrategy::None;
@@ -87,7 +97,10 @@ impl AnonymizingProxy {
                                 text: s.clone(),
                                 strategy: None,
                             });
-                            new_map.insert(k.clone(), serde_json::Value::String(result.anonymized_text));
+                            new_map.insert(
+                                k.clone(),
+                                serde_json::Value::String(result.anonymized_text),
+                            );
                         } else {
                             new_map.insert(k.clone(), v.clone());
                         }
@@ -111,9 +124,9 @@ impl AnonymizingProxy {
                 });
                 serde_json::Value::String(result.anonymized_text)
             }
-            serde_json::Value::Array(arr) => {
-                serde_json::Value::Array(arr.iter().map(|v| self.anonymize_all_strings(v)).collect())
-            }
+            serde_json::Value::Array(arr) => serde_json::Value::Array(
+                arr.iter().map(|v| self.anonymize_all_strings(v)).collect(),
+            ),
             serde_json::Value::Object(map) => {
                 let mut new_map = serde_json::Map::new();
                 for (k, v) in map {

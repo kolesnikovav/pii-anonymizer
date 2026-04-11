@@ -1,5 +1,5 @@
-use rmcp::{ServerHandler, model::ServerInfo};
 use rmcp::tool;
+use rmcp::{model::ServerInfo, ServerHandler};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use tracing::info;
@@ -37,7 +37,8 @@ impl AnonymizerService {
     #[tool(description = "Анонимизировать текст, удаляя PII данные")]
     async fn anonymize(&self, #[tool(aggr)] req: AnonymizeReq) -> Result<String, String> {
         let result = self.engine.anonymize(&crate::models::AnonymizeRequest {
-            text: req.text, strategy: req.strategy,
+            text: req.text,
+            strategy: req.strategy,
         });
         Ok(serde_json::to_string(&result).unwrap_or_else(|_| "Error".to_string()))
     }
@@ -50,17 +51,29 @@ impl AnonymizerService {
     }
 
     #[tool(description = "Пакетная анонимизация")]
-    async fn batch_anonymize(&self, #[tool(aggr)] req: BatchAnonymizeReq) -> Result<String, String> {
-        let requests: Vec<_> = req.texts.iter().map(|t| crate::models::AnonymizeRequest {
-            text: t.clone(), strategy: req.strategy.clone()
-        }).collect();
+    async fn batch_anonymize(
+        &self,
+        #[tool(aggr)] req: BatchAnonymizeReq,
+    ) -> Result<String, String> {
+        let requests: Vec<_> = req
+            .texts
+            .iter()
+            .map(|t| crate::models::AnonymizeRequest {
+                text: t.clone(),
+                strategy: req.strategy.clone(),
+            })
+            .collect();
         let results = self.engine.anonymize_batch(&requests);
         let result = serde_json::json!({ "processed": results.len() });
         Ok(serde_json::to_string(&result).unwrap_or_else(|_| "Error".to_string()))
     }
 }
 
-rmcp::tool_box!(AnonymizerService { anonymize, detect_pii, batch_anonymize });
+rmcp::tool_box!(AnonymizerService {
+    anonymize,
+    detect_pii,
+    batch_anonymize
+});
 
 impl ServerHandler for AnonymizerService {
     fn get_info(&self) -> ServerInfo {

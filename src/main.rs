@@ -6,9 +6,9 @@ use tokio::signal;
 use tracing::{info, Level};
 use tracing_subscriber::FmtSubscriber;
 
-mod config;
 mod anonymizer;
 mod api;
+mod config;
 mod mcp;
 mod middleware;
 mod models;
@@ -76,10 +76,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         return run_config_test(&settings);
     }
 
-    info!("Settings: {}:{}, strategy: {}",
-        settings.server.host,
-        settings.server.port,
-        settings.anonymizer.default_strategy
+    info!(
+        "Settings: {}:{}, strategy: {}",
+        settings.server.host, settings.server.port, settings.anonymizer.default_strategy
     );
 
     // Initialize anonymizer
@@ -100,7 +99,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 /// MCP stdio mode (via rmcp io transport)
-async fn run_mcp_stdio(engine: anonymizer::AnonymizerEngine) -> Result<(), Box<dyn std::error::Error>> {
+async fn run_mcp_stdio(
+    engine: anonymizer::AnonymizerEngine,
+) -> Result<(), Box<dyn std::error::Error>> {
     use rmcp::service::RunningService;
     use rmcp::ServiceExt;
 
@@ -123,7 +124,10 @@ async fn run_http_server(
 
     // Connect to external MCP servers (if configured)
     if !settings.proxy.upstream_servers.is_empty() {
-        info!("Connecting to {} external MCP servers...", settings.proxy.upstream_servers.len());
+        info!(
+            "Connecting to {} external MCP servers...",
+            settings.proxy.upstream_servers.len()
+        );
 
         let mut connections = Vec::new();
 
@@ -181,14 +185,11 @@ async fn run_http_server(
     let mcp_service = std::sync::Arc::new(mcp_service);
 
     // Create Axum routers
-    let health_app = Router::new()
-        .route("/api/v1/health", axum::routing::get(|| async { "OK" }));
+    let health_app = Router::new().route("/api/v1/health", axum::routing::get(|| async { "OK" }));
 
     let sse_app = mcp::sse_transport::create_sse_router_arc(mcp_service);
 
-    let app = Router::new()
-        .merge(sse_app)
-        .nest("/health", health_app);
+    let app = Router::new().merge(sse_app).nest("/health", health_app);
 
     // Start server
     let bind_addr = format!("{}:{}", settings.server.host, settings.server.port);
@@ -197,12 +198,14 @@ async fn run_http_server(
     info!("MCP SSE server running on {}", bind_addr);
     info!("SSE endpoint: http://{}/sse", bind_addr);
     info!("Message endpoint: http://{}/message", bind_addr);
-    info!("Health endpoint: http://{}:{}/api/v1/health", settings.server.host, settings.server.port);
+    info!(
+        "Health endpoint: http://{}:{}/api/v1/health",
+        settings.server.host, settings.server.port
+    );
 
     info!("MCP server ready for client connections");
 
-    axum::serve(listener, app)
-        .await?;
+    axum::serve(listener, app).await?;
 
     shutdown_signal().await;
     Ok(())
@@ -268,14 +271,18 @@ fn run_config_test(settings: &config::Settings) -> Result<(), Box<dyn std::error
             println!("  Strategy: {}", settings.anonymizer.default_strategy);
         }
         other => {
-            errors.push(format!("Unknown strategy '{}'. Valid: replace, mask, hash", other));
+            errors.push(format!(
+                "Unknown strategy '{}'. Valid: replace, mask, hash",
+                other
+            ));
         }
     }
 
     // 2. Built-in patterns
     let builtin_patterns = anonymizer::patterns::get_all_patterns();
-    let enabled_names: std::collections::HashSet<String> = settings.anonymizer.patterns.iter().cloned().collect();
-    
+    let enabled_names: std::collections::HashSet<String> =
+        settings.anonymizer.patterns.iter().cloned().collect();
+
     for name in &enabled_names {
         let found = builtin_patterns.iter().any(|p| &p.name == name);
         if found {
@@ -287,9 +294,17 @@ fn run_config_test(settings: &config::Settings) -> Result<(), Box<dyn std::error
 
     // 3. Custom patterns
     for cp in &settings.anonymizer.custom_patterns {
-        match anonymizer::patterns::PIIPattern::from_config(&cp.name, &cp.pii_type, &cp.pattern, cp.confidence) {
+        match anonymizer::patterns::PIIPattern::from_config(
+            &cp.name,
+            &cp.pii_type,
+            &cp.pattern,
+            cp.confidence,
+        ) {
             Ok(p) => {
-                println!("  Custom pattern: {} ({}), confidence={:.2}", cp.name, p.pii_type, cp.confidence);
+                println!(
+                    "  Custom pattern: {} ({}), confidence={:.2}",
+                    cp.name, p.pii_type, cp.confidence
+                );
             }
             Err(e) => {
                 errors.push(format!("Custom pattern '{}': {}", cp.name, e));
@@ -320,7 +335,10 @@ fn run_config_test(settings: &config::Settings) -> Result<(), Box<dyn std::error
     }
 
     // 6. Server
-    println!("  Server: {}:{}", settings.server.host, settings.server.port);
+    println!(
+        "  Server: {}:{}",
+        settings.server.host, settings.server.port
+    );
 
     println!();
 

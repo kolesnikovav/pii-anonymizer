@@ -1,7 +1,7 @@
-pub mod server;
 pub mod client;
 pub mod proxy;
 pub mod proxy_service;
+pub mod server;
 pub mod sse_transport;
 
 pub use client::{McpProxyManager, McpUpstreamConnection};

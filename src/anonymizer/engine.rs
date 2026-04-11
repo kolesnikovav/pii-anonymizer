@@ -1,9 +1,9 @@
+use crate::anonymizer::patterns::{get_all_patterns, is_known_domain, PIIPattern};
+use crate::anonymizer::strategies::AnonymizationStrategy;
 use crate::config::AnonymizerSettings;
 use crate::models::{AnonymizeRequest, AnonymizeResponse, DetectedPII, PIIType};
-use crate::anonymizer::patterns::{get_all_patterns, PIIPattern, is_known_domain};
-use crate::anonymizer::strategies::AnonymizationStrategy;
-use tracing::{debug, info, warn};
 use std::collections::HashSet;
+use tracing::{debug, info, warn};
 
 #[derive(Debug, Clone)]
 pub struct AnonymizerEngine {
@@ -15,7 +15,9 @@ pub struct AnonymizerEngine {
 impl AnonymizerEngine {
     pub fn new(settings: &AnonymizerSettings) -> Self {
         // Load custom patterns from config
-        let custom_patterns: Vec<PIIPattern> = settings.custom_patterns.iter()
+        let custom_patterns: Vec<PIIPattern> = settings
+            .custom_patterns
+            .iter()
             .filter_map(|cp| {
                 match PIIPattern::from_config(&cp.name, &cp.pii_type, &cp.pattern, cp.confidence) {
                     Ok(p) => {
@@ -32,8 +34,11 @@ impl AnonymizerEngine {
 
         let patterns = Self::build_patterns(settings, custom_patterns);
 
-        info!("Anonymizer: {} patterns, {} custom domains",
-            patterns.len(), settings.custom_known_domains.len());
+        info!(
+            "Anonymizer: {} patterns, {} custom domains",
+            patterns.len(),
+            settings.custom_known_domains.len()
+        );
 
         Self {
             settings: settings.clone(),
@@ -51,11 +56,12 @@ impl AnonymizerEngine {
         let strategy = request
             .strategy
             .as_ref()
-            .map(|s| AnonymizationStrategy::from_str(s))
-            .unwrap_or_else(|| AnonymizationStrategy::from_str(&self.settings.default_strategy));
+            .map(|s| AnonymizationStrategy::parse_strategy(s))
+            .unwrap_or_else(|| AnonymizationStrategy::parse_strategy(&self.settings.default_strategy));
 
         let mut matches: Vec<(usize, usize, String, String)> = Vec::new();
-        let mut pii_counters: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+        let mut pii_counters: std::collections::HashMap<String, usize> =
+            std::collections::HashMap::new();
 
         for pattern in &self.patterns {
             for mat in pattern.pattern.find_iter(text) {
@@ -68,9 +74,9 @@ impl AnonymizerEngine {
                     }
                 }
 
-                let is_duplicate = matches.iter().any(|(start, end, _, _)| {
-                    mat.start() >= *start && mat.end() <= *end
-                });
+                let is_duplicate = matches
+                    .iter()
+                    .any(|(start, end, _, _)| mat.start() >= *start && mat.end() <= *end);
 
                 if !is_duplicate {
                     let pii_type_str = pattern.pii_type.to_string();
@@ -86,11 +92,7 @@ impl AnonymizerEngine {
                         confidence: pattern.confidence,
                     });
 
-                    let replacement = strategy.apply(
-                        mat.as_str(),
-                        &pii_type_str,
-                        current_counter,
-                    );
+                    let replacement = strategy.apply(mat.as_str(), &pii_type_str, current_counter);
 
                     matches.push((mat.start(), mat.end(), pii_type_str, replacement));
                 }
@@ -124,7 +126,10 @@ impl AnonymizerEngine {
 
         let builtin: Vec<PIIPattern> = all_patterns
             .into_iter()
-            .filter(|p| enabled.contains(&p.name) || enabled.contains(&p.pii_type.to_string().to_lowercase()))
+            .filter(|p| {
+                enabled.contains(&p.name)
+                    || enabled.contains(&p.pii_type.to_string().to_lowercase())
+            })
             .collect();
 
         let mut result = builtin;
@@ -137,7 +142,11 @@ impl AnonymizerEngine {
             .trim_start_matches("http://")
             .trim_start_matches("https://");
         let without_www = without_protocol.trim_start_matches("www.");
-        without_www.split('/').next().unwrap_or(without_www).to_string()
+        without_www
+            .split('/')
+            .next()
+            .unwrap_or(without_www)
+            .to_string()
     }
 
     fn map_pii_type(&self, pii_type: &crate::anonymizer::patterns::PIIType) -> PIIType {
@@ -222,13 +231,13 @@ mod tests {
         AnonymizerEngine::new(&settings)
     }
 
-    fn create_engine_with_custom(custom_patterns: Vec<CustomPatternConfig>, custom_domains: Vec<String>) -> AnonymizerEngine {
+    fn create_engine_with_custom(
+        custom_patterns: Vec<CustomPatternConfig>,
+        custom_domains: Vec<String>,
+    ) -> AnonymizerEngine {
         let settings = AnonymizerSettings {
             default_strategy: "mask".to_string(),
-            patterns: vec![
-                "email".to_string(),
-                "domain_unknown".to_string(),
-            ],
+            patterns: vec!["email".to_string(), "domain_unknown".to_string()],
             custom_patterns,
             custom_known_domains: custom_domains,
         };
@@ -243,7 +252,14 @@ mod tests {
 
         assert!(detected.len() >= 1);
         assert!(detected.iter().any(|p| p.pii_type == PIIType::Email));
-        assert_eq!(detected.iter().find(|p| p.pii_type == PIIType::Email).unwrap().value, "test@example.com");
+        assert_eq!(
+            detected
+                .iter()
+                .find(|p| p.pii_type == PIIType::Email)
+                .unwrap()
+                .value,
+            "test@example.com"
+        );
     }
 
     #[test]
@@ -378,16 +394,17 @@ mod tests {
     #[test]
     fn test_domain_masking_skips_known() {
         let engine = create_test_engine();
-        let text = "Visit https://google.com for search and http://my-secret-server.ru for internal";
+        let text =
+            "Visit https://google.com for search and http://my-secret-server.ru for internal";
         let detected = engine.detect_pii(text);
 
-        assert!(!detected.iter().any(|p|
-            p.pii_type == PIIType::Domain && p.value.contains("google.com")
-        ));
+        assert!(!detected
+            .iter()
+            .any(|p| p.pii_type == PIIType::Domain && p.value.contains("google.com")));
 
-        assert!(detected.iter().any(|p|
-            p.pii_type == PIIType::Domain && p.value.contains("my-secret-server")
-        ));
+        assert!(detected
+            .iter()
+            .any(|p| p.pii_type == PIIType::Domain && p.value.contains("my-secret-server")));
     }
 
     #[test]
@@ -400,8 +417,10 @@ mod tests {
         let response = engine.anonymize(&request);
 
         assert!(response.anonymized_text.contains("google.com"));
-        assert!(!response.anonymized_text.contains("my-private-company.ru") ||
-                response.anonymized_text.contains("***"));
+        assert!(
+            !response.anonymized_text.contains("my-private-company.ru")
+                || response.anonymized_text.contains("***")
+        );
     }
 
     // Тесты кастомных паттернов
@@ -423,16 +442,17 @@ mod tests {
     #[test]
     fn test_custom_known_domains_skip() {
         let engine = create_engine_with_custom(vec![], vec!["internal.corp".to_string()]);
-        let detected = engine.detect_pii("Visit https://internal.corp/dashboard and https://unknown.site");
+        let detected =
+            engine.detect_pii("Visit https://internal.corp/dashboard and https://unknown.site");
 
         // internal.corp пропущен
-        assert!(!detected.iter().any(|p|
-            p.pii_type == PIIType::Domain && p.value.contains("internal.corp")
-        ));
+        assert!(!detected
+            .iter()
+            .any(|p| p.pii_type == PIIType::Domain && p.value.contains("internal.corp")));
         // unknown.site обнаружен
-        assert!(detected.iter().any(|p|
-            p.pii_type == PIIType::Domain && p.value.contains("unknown.site")
-        ));
+        assert!(detected
+            .iter()
+            .any(|p| p.pii_type == PIIType::Domain && p.value.contains("unknown.site")));
     }
 
     #[test]
