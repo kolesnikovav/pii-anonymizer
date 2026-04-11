@@ -12,6 +12,7 @@ path = "src/main.rs"
 [[bin]]
 name = "benchmark_pii_anonymizer"
 path = "benchmarks/benchmark_pii_anonymizer.rs"
+required-features = ["bench"]
 
 [lib]
 name = "pii_anonymizer"
@@ -80,3 +81,7 @@ assets = [
 ]
 conf-files = ["/etc/pii-anonymizer/settings.yaml"]
 maintainer-scripts = "debian/"
+
+[features]
+default = []
+bench = []
