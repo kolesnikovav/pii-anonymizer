@@ -21,6 +21,22 @@ patterns:
   - ssh_key_ed25519
   - domain_unknown
 
+# Кастомные PII паттерны (добавьте свои regex паттерны)
+# custom_patterns:
+#   - name: "order_number"
+#     pii_type: "unknown"
+#     pattern: "\\bORD-\\d{6,}\\b"
+#     confidence: 0.9
+#   - name: "internal_id"
+#     pii_type: "unknown"
+#     pattern: "\\bINT-[A-Z]{2}-\\d{4}\\b"
+#     confidence: 0.85
+
+# Кастомные известныеные домены (не будут маскироваться)
+# custom_known_domains:
+#   - "my-company.com"
+#   - "internal.corp"
+
 # MCP configuration
 mcp:
   enabled: true

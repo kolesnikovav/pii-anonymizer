@@ -51,7 +51,8 @@
       "Bash(cargo clean)",
       "Bash(chmod *)",
       "Bash(docker *)",
-      "Bash(tee *)"
+      "Bash(tee *)",
+      "Bash(git push *)"
     ]
   },
   "$version": 3

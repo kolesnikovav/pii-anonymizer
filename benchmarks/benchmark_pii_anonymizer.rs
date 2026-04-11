@@ -23,6 +23,8 @@ fn main() {
             "ssh_key_ed25519".to_string(),
             "domain_unknown".to_string(),
         ],
+        custom_patterns: vec![],
+        custom_known_domains: vec![],
     };
 
     let engine = AnonymizerEngine::new(&settings);

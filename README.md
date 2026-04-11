@@ -29,6 +29,7 @@ docker compose up -d                   # Docker
 | [Интеграции](docs/integrations.md) | AnythingLLM, GitHub MCP, SearXNG, VS Code, Claude |
 | [Стратегии](docs/strategies.md) | Replace, mask, hash — примеры и сравнение |
 | [PII паттерны](docs/patterns.md) | Полный список поддерживаемых PII |
+| [Кастомные паттерны](docs/custom-patterns.md) | Свои regex паттерны и домены |
 | [Развёртывание](docs/deployment.md) | Docker, переменные окружения, docker socket |
 | [Бенчмарки](docs/benchmarks.md) | Тесты производительности vs Presidio |
 | [Сравнение](COMPARISON.md) | Presidio, Scrubadub и другие |

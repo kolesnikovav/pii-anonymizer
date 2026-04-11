@@ -1,6 +1,6 @@
-use pii_anonymizer::config::{AnonymizerSettings, Settings, McpSettings, ProxySettings, LoggingSettings};
+use pii_anonymizer::config::{AnonymizerSettings, Settings, McpSettings, LoggingSettings};
 use pii_anonymizer::anonymizer::AnonymizerEngine;
-use pii_anonymizer::api::create_router;
+use pii_anonymizer::api::routes::create_router;
 use pii_anonymizer::models::AnonymizeRequest;
 
 fn create_test_app() -> axum::Router {
@@ -17,6 +17,8 @@ fn create_test_app() -> axum::Router {
                 "phone_ru".to_string(),
                 "ip_address".to_string(),
             ],
+            custom_patterns: vec![],
+            custom_known_domains: vec![],
         },
         mcp: McpSettings {
             enabled: false,
@@ -24,7 +26,7 @@ fn create_test_app() -> axum::Router {
             server_name: "test".to_string(),
             server_version: "0.1.0".to_string(),
         },
-        proxy: ProxySettings {
+        proxy: pii_anonymizer::mcp::client::McpProxyConfig {
             enabled: false,
             upstream_servers: vec![],
         },

@@ -60,6 +60,35 @@ impl PIIPattern {
             confidence,
         })
     }
+    
+    /// Создание паттерна из строкового типа PII
+    pub fn from_config(name: &str, pii_type: &str, pattern: &str, confidence: f64) -> Result<Self, String> {
+        let regex = Regex::new(pattern).map_err(|e| format!("Невалидный regex: {}", e))?;
+        
+        let pii_type_enum = match pii_type.to_lowercase().as_str() {
+            "email" => PIIType::Email,
+            "phone" => PIIType::Phone,
+            "passport" => PIIType::Passport,
+            "credit_card" => PIIType::CreditCard,
+            "ip_address" => PIIType::IpAddress,
+            "snils" => PIIType::Snils,
+            "inn" => PIIType::Inn,
+            "address" => PIIType::Address,
+            "full_name" => PIIType::FullName,
+            "api_key" => PIIType::ApiKey,
+            "access_token" => PIIType::AccessToken,
+            "ssh_key" => PIIType::SshKey,
+            "domain" => PIIType::Domain,
+            _ => PIIType::Unknown,
+        };
+        
+        Ok(Self {
+            name: name.to_string(),
+            pii_type: pii_type_enum,
+            pattern: regex,
+            confidence,
+        })
+    }
 }
 
 /// Все доступные PII паттерны
@@ -205,7 +234,7 @@ pub fn get_all_patterns() -> Vec<PIIPattern> {
 }
 
 /// Список общеизвестных доменов, которые не нужно маскировать
-const KNOWN_DOMAINS: &[&str] = &[
+const BUILTIN_KNOWN_DOMAINS: &[&str] = &[
     "google.com", "google.ru", "google.org", "google.net",
     "yandex.ru", "yandex.com", "yandex.net", "ya.ru",
     "mail.ru", "mail.com",
@@ -228,10 +257,29 @@ const KNOWN_DOMAINS: &[&str] = &[
     "crates.io", "rust-lang.org",
 ];
 
+/// Получить встроенные известные домены
+pub fn get_builtin_domains() -> Vec<String> {
+    BUILTIN_KNOWN_DOMAINS.iter().map(|s| s.to_string()).collect()
+}
+
 /// Проверка, является ли домен общеизвестным
-pub fn is_known_domain(domain: &str) -> bool {
+pub fn is_known_domain(domain: &str, custom_domains: &[String]) -> bool {
     let domain_lower = domain.to_lowercase();
-    KNOWN_DOMAINS.iter().any(|known| domain_lower == *known || domain_lower.ends_with(&format!(".{}", known)))
+    
+    // Проверка встроенных доменов
+    if BUILTIN_KNOWN_DOMAINS.iter().any(|known| domain_lower == *known || domain_lower.ends_with(&format!(".{}", known))) {
+        return true;
+    }
+    
+    // Проверка кастомных доменов
+    if custom_domains.iter().any(|known| {
+        let known_lower = known.to_lowercase();
+        domain_lower == known_lower || domain_lower.ends_with(&format!(".{}", known_lower))
+    }) {
+        return true;
+    }
+    
+    false
 }
 
 #[cfg(test)]
@@ -275,7 +323,10 @@ mod tests {
 
     #[test]
     fn test_is_known_domain() {
-        assert!(is_known_domain("google.com"));
-        assert!(is_known_domain("my-private-company.com") == false);
+        assert!(is_known_domain("google.com", &[]));
+        assert!(is_known_domain("my-private-company.com", &[]) == false);
+        // Custom domain
+        assert!(is_known_domain("internal.corp", &["internal.corp".to_string()]));
+        assert!(is_known_domain("unknown.site", &["internal.corp".to_string()]) == false);
     }
 }

@@ -24,10 +24,28 @@ pub struct ServerSettings {
     pub workers: usize,
 }
 
+/// Кастомный PII паттерн из конфига
+#[derive(Debug, Deserialize, Clone)]
+pub struct CustomPatternConfig {
+    pub name: String,
+    pub pii_type: String,
+    pub pattern: String,
+    #[serde(default = "default_confidence")]
+    pub confidence: f64,
+}
+
 #[derive(Debug, Deserialize, Clone)]
 pub struct AnonymizerSettings {
     pub default_strategy: String,
     pub patterns: Vec<String>,
+    #[serde(default)]
+    pub custom_patterns: Vec<CustomPatternConfig>,
+    #[serde(default)]
+    pub custom_known_domains: Vec<String>,
+}
+
+fn default_confidence() -> f64 {
+    0.85
 }
 
 #[derive(Debug, Deserialize, Clone)]
