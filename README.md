@@ -6,11 +6,12 @@
 [![Rust](https://img.shields.io/badge/rust-1.75+-orange)](https://www.rust-lang.org/)
 [![Docker Pulls](https://img.shields.io/github/downloads/kolesnikovav/pii-anonymizer/total?label=downloads&color=9cf)](https://github.com/kolesnikovav/pii-anonymizer/releases)
 [![Stars](https://img.shields.io/github/stars/kolesnikovav/pii-anonymizer?style=flat&label=%E2%AD%90&color=yellow)](https://github.com/kolesnikovav/pii-anonymizer/stargazers)
+[![Docs](https://img.shields.io/badge/docs-mkdocs-blue)](https://kolesnikovav.github.io/pii-anonymizer/)
 
 Service for text anonymization with PII (Personally Identifiable Information) removal. HTTP REST API, MCP server, proxying to external MCP servers.
 
-- [English documentation](docs/en/)
-- [Русская документация](docs/ru/)
+- 📖 **[Documentation](https://kolesnikovav.github.io/pii-anonymizer/)**
+- 🇷🇺 **[Документация на русском](https://kolesnikovav.github.io/pii-anonymizer/ru/)**
 
 ## Features
 
@@ -33,20 +34,23 @@ docker compose up -d                   # Docker
 
 ## Documentation
 
-| Section | Description |
-|---------|-------------|
-| [Configuration](docs/en/configuration.md) ([🇷🇺](docs/ru/configuration_ru.md)) | Settings, CLI, environment variables |
-| [REST API](docs/en/rest-api.md) ([🇷🇺](docs/ru/rest-api_ru.md)) | Endpoints, request examples |
-| [MCP Server](docs/en/mcp-server.md) ([🇷🇺](docs/ru/mcp-server_ru.md)) | Tools, SSE transport, launch modes |
-| [MCP Proxy](docs/en/mcp-proxy.md) ([🇷🇺](docs/ru/mcp-proxy_ru.md)) | Upstream server proxy, selective anonymization |
-| [Integrations](docs/en/integrations.md) ([🇷🇺](docs/ru/integrations_ru.md)) | AnythingLLM, GitHub MCP, SearXNG, VS Code, Claude |
-| [Strategies](docs/en/strategies.md) ([🇷🇺](docs/ru/strategies_ru.md)) | Replace, mask, hash — examples and comparison |
-| [PII Patterns](docs/en/patterns.md) ([🇷🇺](docs/ru/patterns_ru.md)) | Full list of supported PII |
-| [Custom Patterns](docs/en/custom-patterns.md) ([🇷🇺](docs/ru/custom-patterns_ru.md)) | Custom regex patterns and domains |
-| [Deployment](docs/en/deployment.md) ([🇷🇺](docs/ru/deployment_ru.md)) | Docker, environment variables, docker socket |
-| [Benchmarks](docs/en/benchmarks.md) ([🇷🇺](docs/ru/benchmarks_ru.md)) | Performance tests vs Presidio |
-| [Comparison](docs/en/comparison.md) ([🇷🇺](docs/ru/comparison_ru.md)) | Presidio, Scrubadub and others |
-| [CI/CD](docs/en/ci-cd.md) ([🇷🇺](docs/ru/ci-cd_ru.md)) | Release pipeline, Docker, .deb packages |
+Full documentation with search, dark mode, and language switch: **https://kolesnikovav.github.io/pii-anonymizer/**
+
+| Section | English | Русский |
+|---------|---------|---------|
+| Quick Start | [EN](https://kolesnikovav.github.io/pii-anonymizer/quick-start/) | [RU](https://kolesnikovav.github.io/pii-anonymizer/ru/quick-start/) |
+| Configuration | [EN](https://kolesnikovav.github.io/pii-anonymizer/configuration/) | [RU](https://kolesnikovav.github.io/pii-anonymizer/ru/configuration/) |
+| REST API | [EN](https://kolesnikovav.github.io/pii-anonymizer/rest-api/) | [RU](https://kolesnikovav.github.io/pii-anonymizer/ru/rest-api/) |
+| MCP Server | [EN](https://kolesnikovav.github.io/pii-anonymizer/mcp-server/) | [RU](https://kolesnikovav.github.io/pii-anonymizer/ru/mcp-server/) |
+| MCP Proxy | [EN](https://kolesnikovav.github.io/pii-anonymizer/mcp-proxy/) | [RU](https://kolesnikovav.github.io/pii-anonymizer/ru/mcp-proxy/) |
+| Integrations | [EN](https://kolesnikovav.github.io/pii-anonymizer/integrations/) | [RU](https://kolesnikovav.github.io/pii-anonymizer/ru/integrations/) |
+| Strategies | [EN](https://kolesnikovav.github.io/pii-anonymizer/strategies/) | [RU](https://kolesnikovav.github.io/pii-anonymizer/ru/strategies/) |
+| PII Patterns | [EN](https://kolesnikovav.github.io/pii-anonymizer/patterns/) | [RU](https://kolesnikovav.github.io/pii-anonymizer/ru/patterns/) |
+| Custom Patterns | [EN](https://kolesnikovav.github.io/pii-anonymizer/custom-patterns/) | [RU](https://kolesnikovav.github.io/pii-anonymizer/ru/custom-patterns/) |
+| Deployment | [EN](https://kolesnikovav.github.io/pii-anonymizer/deployment/) | [RU](https://kolesnikovav.github.io/pii-anonymizer/ru/deployment/) |
+| Benchmarks | [EN](https://kolesnikovav.github.io/pii-anonymizer/benchmarks/) | [RU](https://kolesnikovav.github.io/pii-anonymizer/ru/benchmarks/) |
+| Comparison | [EN](https://kolesnikovav.github.io/pii-anonymizer/comparison/) | [RU](https://kolesnikovav.github.io/pii-anonymizer/ru/comparison/) |
+| CI/CD | [EN](https://kolesnikovav.github.io/pii-anonymizer/ci-cd/) | [RU](https://kolesnikovav.github.io/pii-anonymizer/ru/ci-cd/) |
 
 ## Testing
 
