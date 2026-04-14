@@ -1,0 +1,49 @@
+{
+  "samples": {
+    "email": {
+      "description": "Email адреса",
+      "text": "Контакт: ivan.petrov@gmail.com или support@example.org"
+    },
+    "phone": {
+      "description": "Телефонные номера",
+      "text": "Звоните: +7 (916) 123-45-67 или 8-800-555-35-35"
+    },
+    "snils": {
+      "description": "СНИЛС",
+      "text": "Номер СНИЛС: 123-456-789 00"
+    },
+    "inn": {
+      "description": "ИНН",
+      "text": "ИНН физического лица: 7707083893"
+    },
+    "passport": {
+      "description": "Паспорт РФ",
+      "text": "Паспорт: серия 4508 номер 123456, выдан 01.02.2020"
+    },
+    "card": {
+      "description": "Банковская карта",
+      "text": "Номер карты: 4276 5500 1234 5678, срок 12/25, CVV 123"
+    },
+    "api_key": {
+      "description": "API ключи",
+      "text": "GitHub Token: ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    },
+    "jwt": {
+      "description": "JWT токен",
+      "text": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+    },
+    "ip": {
+      "description": "IP адреса",
+      "text": "Сервер доступен по адресу 192.168.1.100 или 10.0.0.1"
+    },
+    "domain": {
+      "description": "Домены и URL",
+      "text": "Сайт: https://example.com/api/v1/users"
+    },
+    "complex": {
+      "description": "Комплексный пример (все PII)",
+      "text": "Пользователь Иванов Иван Иванович зарегистрировался на сайте example.com.\nEmail: ivanov.ivan@company.ru\nТелефон: +7 (495) 987-65-43\nСНИЛС: 111-222-333 44\nИНН: 7707123456\nПаспорт: 4510 654321\nКарта: 5213 4567 8901 2345\nIP: 172.16.254.1"
+    }
+  },
+  "strategies": ["replace", "mask", "hash"]
+}
