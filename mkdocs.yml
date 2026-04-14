@@ -109,21 +109,21 @@ nav:
   - Getting Started:
     - Quick Start: quick-start.md
   - Features:
-    - Configuration: en/configuration.md
-    - REST API: en/rest-api.md
-    - MCP Server: en/mcp-server.md
-    - MCP Proxy: en/mcp-proxy.md
+    - Configuration: configuration.md
+    - REST API: rest-api.md
+    - MCP Server: mcp-server.md
+    - MCP Proxy: mcp-proxy.md
   - PII Patterns:
-    - Built-in Patterns: en/patterns.md
-    - Custom Patterns: en/custom-patterns.md
-    - Strategies: en/strategies.md
-  - Integrations: en/integrations.md
+    - Built-in Patterns: patterns.md
+    - Custom Patterns: custom-patterns.md
+    - Strategies: strategies.md
+  - Integrations: integrations.md
   - Deployment:
-    - Deployment: en/deployment.md
-    - CI/CD: en/ci-cd.md
+    - Deployment: deployment.md
+    - CI/CD: ci-cd.md
   - Performance:
-    - Benchmarks: en/benchmarks.md
-    - Comparison: en/comparison.md
+    - Benchmarks: benchmarks.md
+    - Comparison: comparison.md
 
 # Extra
 extra:
