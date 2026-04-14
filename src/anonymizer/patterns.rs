@@ -160,6 +160,14 @@ pub fn get_all_patterns() -> Vec<PIIPattern> {
             0.93,
         ).unwrap(),
 
+        // ИНН
+        PIIPattern::with_confidence(
+            "inn",
+            PIIType::Inn,
+            r"\b(?:\d{10}|\d{12})\b",
+            0.90,
+        ).unwrap(),
+
         // API ключи (различные форматы)
         PIIPattern::with_confidence(
             "api_key_generic",
