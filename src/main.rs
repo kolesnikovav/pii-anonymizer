@@ -262,14 +262,9 @@ fn run_config_test(settings: &config::Settings) -> Result<(), Box<dyn std::error
     let mut errors: Vec<String> = Vec::new();
     let mut warnings: Vec<String> = Vec::new();
 
-    println!("Configuration check:");
-    println!();
-
-    // 1. Strategy
+    // Strategy validation
     match settings.anonymizer.default_strategy.as_str() {
-        "replace" | "mask" | "hash" => {
-            println!("  Strategy: {}", settings.anonymizer.default_strategy);
-        }
+        "replace" | "mask" | "hash" => {}
         other => {
             errors.push(format!(
                 "Unknown strategy '{}'. Valid: replace, mask, hash",
@@ -278,86 +273,56 @@ fn run_config_test(settings: &config::Settings) -> Result<(), Box<dyn std::error
         }
     }
 
-    // 2. Built-in patterns
+    // Collect patterns
     let builtin_patterns = anonymizer::patterns::get_all_patterns();
     let enabled_names: std::collections::HashSet<String> =
         settings.anonymizer.patterns.iter().cloned().collect();
 
     for name in &enabled_names {
         let found = builtin_patterns.iter().any(|p| &p.name == name);
-        if found {
-            println!("  Pattern: {}", name);
-        } else {
+        if !found {
             warnings.push(format!("Built-in pattern '{}' not found", name));
         }
     }
 
-    // 3. Custom patterns
+    // Validate custom patterns
     for cp in &settings.anonymizer.custom_patterns {
-        match anonymizer::patterns::PIIPattern::from_config(
+        if let Err(e) = anonymizer::patterns::PIIPattern::from_config(
             &cp.name,
             &cp.pii_type,
             &cp.pattern,
             cp.confidence,
         ) {
-            Ok(p) => {
-                println!(
-                    "  Custom pattern: {} ({}), confidence={:.2}",
-                    cp.name, p.pii_type, cp.confidence
-                );
-            }
-            Err(e) => {
-                errors.push(format!("Custom pattern '{}': {}", cp.name, e));
-            }
+            errors.push(format!("Custom pattern '{}': {}", cp.name, e));
         }
     }
 
-    // 4. Custom domains
-    if !settings.anonymizer.custom_known_domains.is_empty() {
-        for domain in &settings.anonymizer.custom_known_domains {
-            if domain.is_empty() {
-                warnings.push("Empty domain in custom_known_domains".to_string());
-            } else {
-                println!("  Domain (skip): {}", domain);
-            }
+    // Validate domains
+    for domain in &settings.anonymizer.custom_known_domains {
+        if domain.is_empty() {
+            warnings.push("Empty domain in custom_known_domains".to_string());
         }
     }
 
-    // 5. Proxy upstream servers
-    for (name, config) in &settings.proxy.upstream_servers {
-        if config.enabled {
-            let transport_str = match config.transport {
-                mcp::client::McpTransport::Stdio => "stdio",
-                mcp::client::McpTransport::Http => "http",
-            };
-            println!("  Proxy server: {} ({})", name, transport_str);
-        }
-    }
-
-    // 6. Server
-    println!(
-        "  Server: {}:{}",
-        settings.server.host, settings.server.port
-    );
-
-    println!();
+    // Print compact status output (tree-like format)
+    print_status_tree(settings, &errors, &warnings);
 
     // Summary
     if errors.is_empty() && warnings.is_empty() {
-        println!("Configuration is valid");
+        println!("\nConfiguration is valid");
         Ok(())
     } else {
         if !warnings.is_empty() {
-            println!("Warnings ({}):", warnings.len());
+            println!("\nWarnings ({}):", warnings.len());
             for w in &warnings {
-                println!("   {}", w);
+                println!("  {}", w);
             }
             println!();
         }
         if !errors.is_empty() {
             println!("Errors ({}):", errors.len());
             for e in &errors {
-                println!("   {}", e);
+                println!("  {}", e);
             }
             println!();
             println!("Configuration is invalid");
@@ -366,4 +331,83 @@ fn run_config_test(settings: &config::Settings) -> Result<(), Box<dyn std::error
         println!("Configuration is valid with warnings");
         Ok(())
     }
+}
+
+/// Print compact tree-like status output (similar to ls/tree format)
+fn print_status_tree(settings: &config::Settings, errors: &[String], warnings: &[String]) {
+    let status_icon = if errors.is_empty() && warnings.is_empty() {
+        "✓"
+    } else if errors.is_empty() {
+        "⚠"
+    } else {
+        "✗"
+    };
+
+    println!("pii-anonymizer {}", status_icon);
+    println!("├── strategy: {}", settings.anonymizer.default_strategy);
+    println!("├── server: {}:{}", settings.server.host, settings.server.port);
+    
+    // Patterns section
+    if !settings.anonymizer.patterns.is_empty() {
+        println!("├── patterns [{}]", settings.anonymizer.patterns.len());
+        for (i, pattern) in settings.anonymizer.patterns.iter().enumerate() {
+            let connector = if i == settings.anonymizer.patterns.len() - 1 {
+                "└──"
+            } else {
+                "├──"
+            };
+            println!("│   {} {}", connector, pattern);
+        }
+    } else {
+        println!("├── patterns: none");
+    }
+
+    // Custom patterns
+    if !settings.anonymizer.custom_patterns.is_empty() {
+        println!("├── custom [{}]", settings.anonymizer.custom_patterns.len());
+        for cp in &settings.anonymizer.custom_patterns {
+            println!("│   ├── {} ({:.0}%)", cp.name, cp.confidence * 100.0);
+        }
+    }
+
+    // Domains
+    if !settings.anonymizer.custom_known_domains.is_empty() {
+        println!("├── domains [{}]", settings.anonymizer.custom_known_domains.len());
+        for domain in &settings.anonymizer.custom_known_domains {
+            println!("│   └── {}", domain);
+        }
+    }
+
+    // Proxy servers
+    if !settings.proxy.upstream_servers.is_empty() {
+        let enabled_servers: Vec<_> = settings.proxy.upstream_servers.iter()
+            .filter(|(_, config)| config.enabled)
+            .collect();
+        
+        if !enabled_servers.is_empty() {
+            println!("├── proxy [{}]", enabled_servers.len());
+            for (i, (name, config)) in enabled_servers.iter().enumerate() {
+                let transport = match config.transport {
+                    mcp::client::McpTransport::Stdio => "stdio",
+                    mcp::client::McpTransport::Http => "http",
+                };
+                let connector = if i == enabled_servers.len() - 1 {
+                    "└──"
+                } else {
+                    "├──"
+                };
+                println!("│   {} {} ({})", connector, name, transport);
+            }
+        }
+    }
+
+    // Status summary
+    let status_line = if errors.is_empty() && warnings.is_empty() {
+        "valid".to_string()
+    } else if errors.is_empty() {
+        format!("valid with {} warnings", warnings.len())
+    } else {
+        format!("invalid ({} errors)", errors.len())
+    };
+    println!("└── status: {}", status_line);
 }
