@@ -1,0 +1,46 @@
+/* Extra styles for PII Anonymizer documentation */
+
+.md-header {
+  background-color: #3f51b5;
+}
+
+.md-footer {
+  background-color: #303f9f;
+}
+
+/* Status badges */
+.md-typeset .status-valid {
+  color: #4caf50;
+  font-weight: bold;
+}
+
+.md-typeset .status-warning {
+  color: #ff9800;
+  font-weight: bold;
+}
+
+.md-typeset .status-error {
+  color: #f44336;
+  font-weight: bold;
+}
+
+/* Code annotations */
+.md-typeset .annotate {
+  margin: 0.5em 0;
+}
+
+/* Strategy comparison table */
+.strategy-table {
+  width: 100%;
+}
+
+.strategy-table th {
+  background-color: var(--md-default-bg-color--lighter);
+}
+
+/* PII pattern cards */
+.pii-card {
+  border-left: 4px solid #3f51b5;
+  padding-left: 1em;
+  margin: 1em 0;
+}

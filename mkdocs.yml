@@ -1,0 +1,139 @@
+site_name: PII Anonymizer
+site_description: Service for text anonymization with PII removal. HTTP REST API, MCP server, proxying to external MCP servers.
+site_author: Aleks Kolesnikov
+site_url: https://kolesnikovav.github.io/pii-anonymizer/
+repo_url: https://github.com/kolesnikovav/pii-anonymizer
+repo_name: kolesnikovav/pii-anonymizer
+edit_uri: edit/master/docs/
+
+theme:
+  name: material
+  language: en
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - navigation.indexes
+    - navigation.top
+    - search.highlight
+    - search.share
+    - search.suggest
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+    - header.autohide
+  palette:
+    # Palette toggle for light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+
+    # Palette toggle for dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  icon:
+    repo: fontawesome/brands/github
+  logo: material/security
+  favicon: material/security
+
+# Plugins
+plugins:
+  - search:
+      lang:
+        - en
+        - ru
+  - i18n:
+      docs_structure: folder
+      languages:
+        - locale: en
+          default: true
+          name: English
+          build: true
+        - locale: ru
+          name: Русский
+          build: true
+          nav_translations:
+            Home: Главная
+            Getting Started: Начало
+            Configuration: Конфигурация
+            REST API: REST API
+            MCP Server: MCP Сервер
+            MCP Proxy: MCP Прокси
+            Integrations: Интеграции
+            Features: Возможности
+            PII Patterns: PII Паттерны
+            Custom Patterns: Кастомные Паттерны
+            Strategies: Стратегии
+            Deployment: Развёртывание
+            Benchmarks: Бенчмарки
+            Comparison: Сравнение
+            CI/CD: CI/CD
+
+# Markdown extensions
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - admonition
+  - pymdownx.details
+  - tables
+  - toc:
+      permalink: true
+      toc_depth: 3
+  - attr_list
+  - md_in_html
+  - def_list
+
+# Navigation
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Quick Start: quick-start.md
+  - Features:
+    - Configuration: en/configuration.md
+    - REST API: en/rest-api.md
+    - MCP Server: en/mcp-server.md
+    - MCP Proxy: en/mcp-proxy.md
+  - PII Patterns:
+    - Built-in Patterns: en/patterns.md
+    - Custom Patterns: en/custom-patterns.md
+    - Strategies: en/strategies.md
+  - Integrations: en/integrations.md
+  - Deployment:
+    - Deployment: en/deployment.md
+    - CI/CD: en/ci-cd.md
+  - Performance:
+    - Benchmarks: en/benchmarks.md
+    - Comparison: en/comparison.md
+
+# Extra
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/kolesnikovav/pii-anonymizer
+    - icon: fontawesome/brands/docker
+      link: https://hub.docker.com/r/kolesnikovav/pii-anonymizer
+  analytics:
+    provider: google
+
+extra_css:
+  - stylesheets/extra.css
