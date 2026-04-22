@@ -71,19 +71,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         settings.anonymizer.default_strategy = strategy.clone();
     }
 
-    // Config validation (like nginx -t)
-    if args.config_test {
-        return run_config_test(&settings);
-    }
-
-    info!(
-        "Settings: {}:{}, strategy: {}",
-        settings.server.host, settings.server.port, settings.anonymizer.default_strategy
-    );
-
     // Initialize anonymizer
     let anonymizer = anonymizer::AnonymizerEngine::new(&settings.anonymizer);
     info!("Anonymizer initialized");
+
+    // Print status tree for all startup modes
+    print_status_tree(&settings, &[], &[]);
+
+    // Config validation (like nginx -t)
+    if args.config_test {
+        println!("\nConfiguration is valid");
+        return Ok(());
+    }
 
     // MCP stdio mode
     if args.mcp_mode == "stdio" {
@@ -346,7 +345,7 @@ fn print_status_tree(settings: &config::Settings, errors: &[String], warnings: &
     println!("pii-anonymizer {}", status_icon);
     println!("├── strategy: {}", settings.anonymizer.default_strategy);
     println!("├── server: {}:{}", settings.server.host, settings.server.port);
-    
+
     // Patterns section
     if !settings.anonymizer.patterns.is_empty() {
         println!("├── patterns [{}]", settings.anonymizer.patterns.len());
@@ -383,7 +382,7 @@ fn print_status_tree(settings: &config::Settings, errors: &[String], warnings: &
         let enabled_servers: Vec<_> = settings.proxy.upstream_servers.iter()
             .filter(|(_, config)| config.enabled)
             .collect();
-        
+
         if !enabled_servers.is_empty() {
             println!("├── proxy [{}]", enabled_servers.len());
             for (i, (name, config)) in enabled_servers.iter().enumerate() {

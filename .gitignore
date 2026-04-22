@@ -24,3 +24,6 @@ logs/
 
 # Documentation (temporary)
 *.pdf
+
+# Qwen Code memory
+memory/
